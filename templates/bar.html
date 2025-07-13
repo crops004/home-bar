@@ -138,7 +138,7 @@
             // Confirm deletion
             document.getElementById('confirm-delete').addEventListener('click', function() {
                 if (itemToDelete) {
-                    fetch(`/delete_bar_item/${itemToDelete}`, {
+                    fetch(`/bar/delete_bar_item/${itemToDelete}`, {
                         method: 'DELETE'
                     })
                     .then(response => response.json())
