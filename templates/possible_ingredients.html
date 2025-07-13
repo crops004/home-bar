@@ -25,16 +25,10 @@
     <!-- List of possible ingredients -->
     <h2>Master List</h2>
     {% if ingredients %}
-        <!-- Filter inputs -->
+        <!-- Unified filter input -->
         <div style="margin-bottom: 10px;">
-            <label for="filter-name">Filter Name:</label>
-            <input type="text" id="filter-name" onkeyup="filterTable()" placeholder="Filter by name...">
-            
-            <label for="filter-category" style="margin-left: 15px;">Filter Category:</label>
-            <input type="text" id="filter-category" onkeyup="filterTable()" placeholder="Filter by category...">
-            
-            <label for="filter-sub_category" style="margin-left: 15px;">Filter Sub Category:</label>
-            <input type="text" id="filter-sub_category" onkeyup="filterTable()" placeholder="Filter by sub category...">
+            <label for="filter-all">Filter:</label>
+            <input type="text" id="filter-all" onkeyup="filterTable()" placeholder="Filter by name, category, or sub category..." style="width: 300px;">
         </div>
 
         <table border="1" style="border-collapse: collapse; width: 100%;">
@@ -307,26 +301,20 @@
 
             // Filtering functionality
             window.filterTable = function() {
-                const filterName = document.getElementById('filter-name').value.toLowerCase();
-                const filterCategory = document.getElementById('filter-category').value.toLowerCase();
-                const filterSubCategory = document.getElementById('filter-sub_category').value.toLowerCase();
+                const filterValue = document.getElementById('filter-all').value.toLowerCase();
                 const tbody = document.getElementById('ingredients-list');
                 const rows = tbody.querySelectorAll('tr');
 
                 rows.forEach(row => {
-                    const name = row.cells[2].textContent.toLowerCase(); // Name is in the third column (index 2)
-                    const category = row.cells[3].textContent.toLowerCase(); // Category is in the fourth column (index 3)
-                    const subCategory = row.cells[4].textContent.toLowerCase(); // Sub Category is in the fifth column (index 4)
+                    const name = row.cells[2].textContent.toLowerCase();       // third column
+                    const category = row.cells[3].textContent.toLowerCase();   // fourth column
+                    const subCategory = row.cells[4].textContent.toLowerCase();// fifth column
 
-                    const matchesName = name.includes(filterName);
-                    const matchesCategory = category.includes(filterCategory);
-                    const matchesSubCategory = subCategory.includes(filterSubCategory);
+                    const matches = name.includes(filterValue) ||
+                                    category.includes(filterValue) ||
+                                    subCategory.includes(filterValue);
 
-                    if (matchesName && matchesCategory && matchesSubCategory) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
+                    row.style.display = matches ? '' : 'none';
                 });
             };
         });
