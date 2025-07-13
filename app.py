@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from routes import drink_maker, bar, recipes
 from utils import get_db_connection, load_lists
 from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
@@ -11,12 +11,37 @@ import sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
+AUTH_USERNAME = os.getenv('USERNAME')
+AUTH_PASSWORD = os.getenv('PASSWORD')
 lists = load_lists()
 app.config['LISTS'] = lists
 
 app.register_blueprint(drink_maker.drink_maker_bp, url_prefix='/drink')
 app.register_blueprint(bar.bar_bp, url_prefix='/bar')
 app.register_blueprint(recipes.recipes_bp, url_prefix='/recipe')
+
+# Login management
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form['username'] == os.getenv('USERNAME') and request.form['password'] == os.getenv('PASSWORD'):
+            session['logged_in'] = True
+            return redirect(url_for('bar'))  # or your home route
+        else:
+            flash('Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    flash('Logged out')
+    return redirect(url_for('login'))
+
+@app.before_request
+def require_login():
+    allowed_routes = ['login', 'static']
+    if not session.get('logged_in') and request.endpoint not in allowed_routes:
+        return redirect(url_for('login'))
 
 # Homepage route
 @app.route('/')
