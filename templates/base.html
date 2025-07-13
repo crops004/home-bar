@@ -43,7 +43,10 @@ function showToast(message, duration = 3000) {
         <a href="{{ url_for('recipes.recipes') }}">Recipe Collection</a> |
         <a href="{{ url_for('drink_maker.drink_maker') }}">Drink Maker</a> |
         <a href="{{ url_for('manage_lists') }}">Manage Lists</a> |
-        <a href="{{ url_for('possible_ingredients') }}">Possible Ingredients</a>
+        <a href="{{ url_for('possible_ingredients') }}">Possible Ingredients</a> |
+        {% if session.logged_in %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% endif %}
     </nav>
     <main>
         {% block content %}{% endblock %}
