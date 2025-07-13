@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Drink Maker{% endblock %}
+{% block content %}
+    <h1>Drinks You Can Make</h1>
+    <div style="display: flex;">
+        <!-- Drink Table -->
+        <div style="flex: 1;">
+            <table id="drink-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th data-sort="asc" onclick="sortTable('drink-table', 0)">Drink Name<span class="sort-arrow"></span></th>
+                        <th data-sort="desc" onclick="sortTable('drink-table', 1)">Base Spirit<span class="sort-arrow"></span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for drink in can_make %}
+                        <tr data-drink="{{ drink.drink }}" class="recipe-link">
+                            <td>{{ drink.drink }}</td>
+                            <td>{{ drink.base_spirit }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p>Explore more options:</p>
+            <ul>
+                <li><a href="{{ url_for('drink_maker.missing_one') }}">Sooo close...</a></li>
+                <li><a href="{{ url_for('drink_maker.replacements') }}">Replacements</a></li>
+            </ul>
+        </div>
+        <!-- Sidebar for Details -->
+        <div style="flex: 1; padding: 10px; border-left: 1px solid #ccc;">
+            <h3>Recipe Details</h3>
+            <div id="recipe-details"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const recipeLinks = document.querySelectorAll('.recipe-link');
+            const recipeDetailsDiv = document.getElementById('recipe-details');
+
+            recipeLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const drink = this.getAttribute('data-drink');
+                    fetch(`/recipe/${drink}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let detailsHtml = `<h4>${data.name}</h4>`;
+                            for (const [key, value] of Object.entries(data)) {
+                                if (key !== 'name' && key !== 'ingredients') {
+                                    const formattedKey = key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                    const displayValue = value !== null && value !== '' ? value : 'N/A';
+                                    detailsHtml += `<p><strong>${formattedKey}:</strong> ${displayValue}</p>`;
+                                }
+                            }
+                            detailsHtml += `<p><strong>Ingredients:</strong></p><ul>`;
+                            data.ingredients.forEach(ing => {
+                                detailsHtml += `<li>${ing.quantity || ''} ${ing.unit || ''} ${ing.ingredient}</li>`;
+                            });
+                            detailsHtml += `</ul>`;
+                            recipeDetailsDiv.innerHTML = detailsHtml;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching recipe:', error);
+                            recipeDetailsDiv.innerHTML = '<p>Error loading recipe details.</p>';
+                        });
+                });
+            });
+
+            // Sorting function with secondary sort
+            window.sortTable = function(tableId, colIndex) {
+                const table = document.getElementById(tableId);
+                const tbody = table.getElementsByTagName('tbody')[0];
+                const rows = Array.from(tbody.getElementsByTagName('tr'));
+                const header = table.getElementsByTagName('th')[colIndex];
+                let currentDirection = header.getAttribute('data-sort') || 'asc';
+                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+
+                // Set the new direction and update the arrow
+                header.setAttribute('data-sort', newDirection);
+                const arrows = table.querySelectorAll('.sort-arrow');
+                arrows.forEach(arrow => arrow.textContent = '');
+                header.querySelector('.sort-arrow').textContent = newDirection === 'asc' ? '▲' : '▼';
+
+                // Perform the sort with secondary sort on Drink Name (index 0) when sorting by Base Spirit (index 1)
+                rows.sort((rowA, rowB) => {
+                    const cellA1 = rowA.cells[colIndex].textContent.trim().toLowerCase();
+                    const cellB1 = rowB.cells[colIndex].textContent.trim().toLowerCase();
+                    const cellA2 = rowA.cells[0].textContent.trim().toLowerCase(); // Secondary sort by Drink Name
+                    const cellB2 = rowB.cells[0].textContent.trim().toLowerCase();
+
+                    // Primary sort by the clicked column
+                    let comparison = newDirection === 'asc' ? cellA1.localeCompare(cellB1) : cellB1.localeCompare(cellA1);
+                    // If primary sort is equal, use secondary sort (always ascending for Drink Name)
+                    if (comparison === 0 && colIndex === 1) {
+                        comparison = cellA2.localeCompare(cellB2);
+                    }
+                    return comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            };
+
+            // Default sort by Base Spirit (column index 1) in descending order on page load
+            const baseSpiritHeader = document.getElementById('drink-table').getElementsByTagName('th')[1];
+            baseSpiritHeader.setAttribute('data-sort', 'desc'); // Ensure starting with descending
+            sortTable('drink-table', 1); // Sort by Base Spirit on load
+        });
+    </script>
+
+    <style>
+        table {
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #ddd;
+        }
+        td:hover {
+            background-color: #f09898;
+        }
+        .sort-arrow {
+            margin-left: 5px;
+        }
+    </style>
+{% endblock %}

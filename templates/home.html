@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+    <h1>Welcome to My Cocktail App</h1>
+    <p>Explore your bar, recipes, and what you can make!</p>
+    <ul>
+        <li><a href="{{ url_for('bar.bar') }}">View Bar Contents</a></li>
+        <li><a href="{{ url_for('recipes.recipes') }}">View Recipe Collection</a></li>
+        <li><a href="{{ url_for('drink_maker.drink_maker') }}">Go to Drink Maker</a></li>
+    </ul>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Manage Lists{% endblock %}
+{% block content %}
+    <h1>Manage Lists</h1>
+    <form method="post">
+        <h3>Categories</h3>
+        <textarea name="categories" rows="3" style="width: 100%;">{{ lists.categories | join(', ') }}</textarea>
+
+        <h3>Subcategories</h3>
+        {% for category in lists.categories %}
+            <label>{{ category }} Subcategories:</label><br>
+            <textarea name="subcategories_{{ category }}" rows="2" style="width: 100%;">{{ lists.subcategories[category] | join(', ') if lists.subcategories[category] else '' }}</textarea><br>
+        {% endfor %}
+
+        <h3>Glass Types</h3>
+        <textarea name="glass_types" rows="3" style="width: 100%;">{{ lists.glass_types | join(', ') }}</textarea>
+
+        <h3>Methods</h3>
+        <textarea name="methods" rows="3" style="width: 100%;">{{ lists.methods | join(', ') }}</textarea>
+
+        <h3>Ice Options</h3>
+        <textarea name="ice_options" rows="3" style="width: 100%;">{{ lists.ice_options | join(', ') }}</textarea>
+
+        <h3>Units</h3>
+        <textarea name="units" rows="3" style="width: 100%;">{{ lists.units | join(', ') }}</textarea>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
+            <a href="{{ url_for('recipes.recipes') }}" style="margin-left: 10px; padding: 10px 20px; background-color: #ccc; color: black; text-decoration: none; border-radius: 4px;">Cancel</a>
+        </div>
+    </form>
+{% endblock %}

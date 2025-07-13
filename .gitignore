@@ -1,0 +1,12 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+
+# Ignore your virtual environment
+venv/
+
+# Ignore macOS metadata
+.DS_Store
+
+# Ignore SQLite DB (optional — only if you don't want to commit the .db file)
+# cocktail_app.db

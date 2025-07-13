@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% block title %}Bar Contents{% endblock %}
+{% block content %}
+    <h1>Bar Contents</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast("{{ messages[0] | escape }}");
+        });
+    </script>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Form to add a new item -->
+    <h2>Add New Item</h2>
+    <form method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name-input" placeholder="Start typing to filter..." onkeyup="filterDropdown()" required>
+        <select id="name" name="name" style="display: none;" required onchange="updateFields()">
+            <option value="">Select an ingredient</option>
+            {% for name in possible_names %}
+                <option value="{{ name }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+        <div id="name-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
+
+        <!-- Category/Subcategory: hidden until ingredient selected -->
+        <div id="category-fields" style="display: none; margin-top: 10px;">
+            <div id="category-wrapper">
+                <label for="category">Category:</label>
+                <input type="text" id="category" name="category" readonly required>
+            </div>
+            <div id="subcategory-wrapper">
+                <label for="sub_category">Sub Category (Optional):</label>
+                <input type="text" id="sub_category" name="sub_category" readonly>
+            </div>
+        </div>
+
+        <button type="button" onclick="clearIngredientFields()" style="margin-top: 10px; background-color: #bbb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Clear</button>
+
+        <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Add to Bar</button>
+    </form>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3>Confirm Deletion</h3>
+            <p id="delete-modal-message"></p>
+            <button id="confirm-delete" style="background-color: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Confirm</button>
+            <button id="cancel-delete" style="background-color: #ccc; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+    
+    <!-- Unified Filter Row -->
+    <div style="margin-bottom: 20px;">
+        <h2>Filter All Items</h2>
+        <input type="text" id="filter-all" placeholder="Filter by name, category, or subcategory..." onkeyup="filterAllTables()" style="width: 300px;">
+    </div>
+    
+    <!-- Misc Items Table -->
+    <h2>Misc Items</h2>
+    {% if other_items %}
+        <table id="other-items-table" border="1" style="border-collapse: collapse; width: 100%; table-layout: fixed;">
+            <thead>
+                <tr>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('other-items-table', 0)">Name <span class="sort-arrow"></span></th>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('other-items-table', 1)">Category <span class="sort-arrow"></span></th>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('other-items-table', 2)">Sub Category <span class="sort-arrow"></span></th>
+                    <th style="width: 50px;">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in other_items %}
+                    <tr>
+                        <td style="width: calc(100% / 3);">{{ item['name'] }}</td>
+                        <td style="width: calc(100% / 3);">{{ item['category'] }}</td>
+                        <td style="width: calc(100% / 3);">{{ item['sub_category'] or '' }}</td>
+                        <td style="width: 50px; text-align: center;">
+                            <button class="delete-item" data-name="{{ item['name'] }}" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 5px 10px;">X</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="misc-no-items" style="display: none; color: #666;">No matching items</div>
+    {% else %}
+        <p>No misc items in your bar.</p>
+    {% endif %}
+
+    <!-- Spirits Table -->
+    <h2>Spirits</h2>
+    {% if spirits %}
+        <table id="spirits-table" border="1" style="border-collapse: collapse; width: 100%; table-layout: fixed;">
+            <thead>
+                <tr>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('spirits-table', 0)">Name <span class="sort-arrow"></span></th>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('spirits-table', 1)">Category <span class="sort-arrow"></span></th>
+                    <th style="width: calc(100% / 3);" onclick="sortTable('spirits-table', 2)">Sub Category <span class="sort-arrow"></span></th>
+                    <th style="width: 50px;">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in spirits %}
+                    <tr>
+                        <td style="width: calc(100% / 3);">{{ item['name'] }}</td>
+                        <td style="width: calc(100% / 3);">{{ item['category'] }}</td>
+                        <td style="width: calc(100% / 3);">{{ item['sub_category'] or '' }}</td>
+                        <td style="width: 50px; text-align: center;">
+                            <button class="delete-item" data-name="{{ item['name'] }}" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 5px 10px;">X</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="spirits-no-items" style="display: none; color: #666;">No matching items</div>
+    {% else %}
+        <p>No spirits in your bar.</p>
+    {% endif %}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let itemToDelete = null;
+
+            // Handle delete button clicks
+            const deleteButtons = document.querySelectorAll('.delete-item');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    itemToDelete = this.getAttribute('data-name');
+                    const modal = document.getElementById('delete-modal');
+                    const message = document.getElementById('delete-modal-message');
+                    message.textContent = `Are you sure you want to delete ${itemToDelete} from your bar?`;
+                    modal.style.display = 'block';
+                });
+            });
+
+            // Confirm deletion
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                if (itemToDelete) {
+                    fetch(`/delete_bar_item/${itemToDelete}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Close the modal and refresh the page
+                        document.getElementById('delete-modal').style.display = 'none';
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting item:', error);
+                        alert('Error deleting item.');
+                        document.getElementById('delete-modal').style.display = 'none';
+                    });
+                }
+            });
+
+            // Cancel deletion
+            document.getElementById('cancel-delete').addEventListener('click', function() {
+                document.getElementById('delete-modal').style.display = 'none';
+                itemToDelete = null;
+            });
+
+            // Filter dropdown as user types
+            window.filterDropdown = function() {
+                const inputEl = document.getElementById('name-input');
+                const input = inputEl.value.toLowerCase();
+                const select = document.getElementById('name');
+                const dropdown = document.getElementById('name-dropdown');
+                const categoryFields = document.getElementById('category-fields');
+
+                dropdown.innerHTML = '';
+
+                if (input === '') {
+                    dropdown.style.display = 'none';
+                    select.value = '';
+                    // Clear and hide category fields
+                    document.getElementById('category').value = '';
+                    document.getElementById('sub_category').value = '';
+                    categoryFields.style.display = 'none';
+                    return;
+                }
+
+                dropdown.style.display = 'block';
+                const options = Array.from(select.options).slice(1); // Skip the "Select an ingredient" option
+                const filteredOptions = options.filter(option => option.value.toLowerCase().includes(input));
+
+                if (filteredOptions.length > 0) {
+                    filteredOptions.forEach(option => {
+                        const div = document.createElement('div');
+                        div.textContent = option.value;
+                        div.style.padding = '5px';
+                        div.style.cursor = 'pointer';
+                        div.addEventListener('click', function() {
+                            document.getElementById('name-input').value = option.value;
+                            select.value = option.value;
+                            dropdown.style.display = 'none';
+                            updateFields();  // fill category/subcategory + show fields if needed
+                        });
+                        dropdown.appendChild(div);
+                    });
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            };
+            
+            // Clear ingredient fields
+            window.clearIngredientFields = function() {
+                document.getElementById('name-input').value = '';
+                document.getElementById('name').value = '';
+                document.getElementById('category').value = '';
+                document.getElementById('sub_category').value = '';
+                document.getElementById('category-fields').style.display = 'none';
+                document.getElementById('name-dropdown').style.display = 'none';
+            };
+
+            // Autofill category and sub_category fields
+            window.updateFields = function () {
+                const name = document.getElementById('name').value;
+                const categoryInput = document.getElementById('category');
+                const subCategoryInput = document.getElementById('sub_category');
+                const categoryFields = document.getElementById('category-fields');
+
+                // Always reset
+                categoryFields.style.display = 'none';
+                categoryInput.value = '';
+                subCategoryInput.value = '';
+                categoryInput.parentElement.style.display = 'none';
+                subCategoryInput.parentElement.style.display = 'none';
+
+                if (name) {
+                    fetch(`/ingredient-details/${encodeURIComponent(name)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert(data.error);
+                            } else {
+                                const hasCategory = !!data.category;
+                                const hasSubCategory = !!data.sub_category;
+
+                                if (hasCategory || hasSubCategory) {
+                                    categoryFields.style.display = 'block';
+                                }
+
+                                if (hasCategory) {
+                                    categoryInput.value = data.category;
+                                    categoryInput.parentElement.style.display = 'inline-block';
+                                }
+
+                                if (hasSubCategory) {
+                                    subCategoryInput.value = data.sub_category;
+                                    subCategoryInput.parentElement.style.display = 'inline-block';
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching ingredient details:', error);
+                        });
+                }
+            };
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('name-dropdown');
+                const input = document.getElementById('name-input');
+                if (!input.contains(event.target) && !dropdown.contains(event.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            // Sorting function
+            window.sortTable = function(tableId, colIndex) {
+                const table = document.getElementById(tableId);
+                const tbody = table.getElementsByTagName('tbody')[0];
+                const rows = Array.from(tbody.getElementsByTagName('tr'));
+                const header = table.getElementsByTagName('th')[colIndex];
+                const currentDirection = header.getAttribute('data-sort') || 'asc';
+                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+
+                // Update sort direction
+                header.setAttribute('data-sort', newDirection);
+                // Update sort arrow
+                const arrows = table.querySelectorAll('.sort-arrow');
+                arrows.forEach(arrow => arrow.textContent = '');
+                header.querySelector('.sort-arrow').textContent = newDirection === 'asc' ? '▲' : '▼';
+
+                rows.sort((rowA, rowB) => {
+                    const cellA = rowA.cells[colIndex].textContent.trim().toLowerCase();
+                    const cellB = rowB.cells[colIndex].textContent.trim().toLowerCase();
+                    if (newDirection === 'asc') {
+                        return cellA.localeCompare(cellB);
+                    } else {
+                        return cellB.localeCompare(cellA);
+                    }
+                });
+
+                // Re-append rows in sorted order
+                rows.forEach(row => tbody.appendChild(row));
+            };
+
+            window.filterAllTables = function() {
+                const filterValue = document.getElementById('filter-all').value.toLowerCase();
+                const tables = ['other-items-table', 'spirits-table'];
+
+                tables.forEach(tableId => {
+                    const table = document.getElementById(tableId);
+                    const noItemsDivId = tableId === 'other-items-table' ? 'misc-no-items' : 'spirits-no-items';
+                    const noItemsDiv = document.getElementById(noItemsDivId);
+
+                    if (!table) return;
+
+                    const tbody = table.getElementsByTagName('tbody')[0];
+                    const rows = tbody.getElementsByTagName('tr');
+                    let hasVisibleRows = false;
+
+                    for (let i = 0; i < rows.length; i++) {
+                        const name = rows[i].cells[0].textContent.toLowerCase();
+                        const category = rows[i].cells[1].textContent.toLowerCase();
+                        const subcategory = rows[i].cells[2].textContent.toLowerCase();
+
+                        const matches = name.includes(filterValue) ||
+                                        category.includes(filterValue) ||
+                                        subcategory.includes(filterValue);
+
+                        if (matches) {
+                            rows[i].style.display = '';
+                            hasVisibleRows = true;
+                        } else {
+                            rows[i].style.display = 'none';
+                        }
+                    }
+
+                    if (noItemsDiv) {
+                        noItemsDiv.style.display = (rows.length > 0 && !hasVisibleRows) ? 'block' : 'none';
+                    }
+                });
+            };
+
+            // Initial call to filterAllTables to handle any pre-filled filter values
+            filterAllTables();
+        });
+    </script>
+{% endblock %}

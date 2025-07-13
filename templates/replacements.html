@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Replacements{% endblock %}
+{% block content %}
+    <h1>Drinks with Replacements</h1>
+    <div style="display: flex;">
+        <!-- Drink List -->
+        <div style="flex: 1;">
+            <ul>
+                {% for drink in replacements %}
+                    <li>
+                        <a href="#" class="recipe-link" data-drink="{{ drink.drink }}">{{ drink.drink }}</a>
+                        (Base Spirit: {{ drink.base_spirit }})
+                        {% if drink.missing_ingredients %}
+                            <br>Missing: {{ drink.missing_ingredients | join(', ') }}
+                            <br>Replacements: 
+                            {% for missing_ing, repls in drink.replacements.items() %}
+                                {% if repls %}
+                                    <span>For {{ missing_ing }}: {{ repls | join(', ') }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            <p>Explore more options:</p>
+            <ul>
+                <li><a href="{{ url_for('drink_maker.missing_one') }}">Sooo close...</a></li>
+                <li><a href="{{ url_for('drink_maker.drink_maker') }}">Drinks You Can Make</a></li>
+            </ul>
+        </div>
+        <!-- Sidebar for Details -->
+        <div style="flex: 1; padding: 10px; border-left: 1px solid #ccc;">
+            <h3>Recipe Details & Replacements</h3>
+            <div id="recipe-details"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const recipeLinks = document.querySelectorAll('.recipe-link');
+            const recipeDetailsDiv = document.getElementById('recipe-details');
+
+            recipeLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const drink = this.getAttribute('data-drink');
+                    fetch(`/recipe/${drink}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let detailsHtml = `<h4>${data.name}</h4>`;
+                            for (const [key, value] of Object.entries(data)) {
+                                if (key !== 'name' && key !== 'ingredients') {
+                                    const formattedKey = key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                    const displayValue = value !== null && value !== '' ? value : 'N/A';
+                                    detailsHtml += `<p><strong>${formattedKey}:</strong> ${displayValue}</p>`;
+                                }
+                            }
+                            detailsHtml += `<p><strong>Ingredients:</strong></p><ul>`;
+                            data.ingredients.forEach(ing => {
+                                detailsHtml += `<li>${ing.quantity || ''} ${ing.unit || ''} ${ing.ingredient}</li>`;
+                            });
+                            detailsHtml += `</ul>`;
+                            // Add replacements from the data
+                            const drinkData = {{ replacements | tojson | safe }};
+                            const thisDrink = drinkData.find(d => d.drink === drink);
+                            if (thisDrink && thisDrink.missing_ingredients) {
+                                detailsHtml += `<p><strong>Missing Ingredients:</strong> ${thisDrink.missing_ingredients.join(', ')}</p>`;
+                                for (const [missing, repls] of Object.entries(thisDrink.replacements)) {
+                                    if (repls.length) {
+                                        detailsHtml += `<p><strong>Replacements for ${missing}:</strong> ${repls.join(', ')}</p>`;
+                                    }
+                                }
+                            }
+                            recipeDetailsDiv.innerHTML = detailsHtml;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching recipe:', error);
+                            recipeDetailsDiv.innerHTML = '<p>Error loading recipe details.</p>';
+                        });
+                });
+            });
+        });
+    </script>
+    <style>
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 10px; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .recipe-link:hover { background-color: #f0f0f0; }
+    </style>
+    <a href="{{ url_for('drink_maker.drink_maker') }}">Back to Drink Maker</a>
+{% endblock %}

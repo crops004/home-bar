@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My Cocktail App{% endblock %}</title>
+</head>
+<style>
+    .toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #333;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 6px;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        z-index: 9999;
+        }
+    .toast.show {
+        opacity: 1;
+        }
+</style>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function showToast(message, duration = 3000) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+}
+</script>
+
+<body>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a> |
+        <a href="{{ url_for('bar.bar') }}">Bar Contents</a> |
+        <a href="{{ url_for('recipes.recipes') }}">Recipe Collection</a> |
+        <a href="{{ url_for('drink_maker.drink_maker') }}">Drink Maker</a> |
+        <a href="{{ url_for('manage_lists') }}">Manage Lists</a> |
+        <a href="{{ url_for('possible_ingredients') }}">Possible Ingredients</a>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

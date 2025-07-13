@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Drinks Missing Ingredients{% endblock %}
+{% block content %}
+    <h1>Drinks Missing Ingredients</h1>
+    <div style="display: flex;">
+        <!-- Left Section (Filter + Drink List) -->
+        <div style="flex: 1; padding: 10px; max-width: 70%;">
+            <!-- Filter Dropdown -->
+            <div style="margin-bottom: 20px;">
+                <h2>Filter Drinks</h2>
+                <label for="missing-ingredients-filter">Show drinks missing exactly </label>
+                <select id="missing-ingredients-filter" onchange="filterDrinks()">
+                    <!-- Options will be populated dynamically with existing values -->
+                </select>
+                <span> missing ingredient(s)</span>
+            </div>
+            <!-- Drink Table -->
+            <table id="drinks-table" border="1" style="border-collapse: collapse; width: 100%; table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style="width: 17.5%;">Drink Name</th>
+                        <th style="width: 52.5%;">Missing Ingredients</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for drink, missing in missing_one %}
+                        <tr onclick="showRecipe(this)" data-drink="{{ drink }}" data-missing="{{ missing.split(',')|length if missing else 0 }}">
+                            <td>{{ drink }}</td>
+                            <td>{{ missing|default('None') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Right Section (Sidebar for Details) -->
+        <div style="flex: 0 0 30%; padding: 10px; border-left: 1px solid #ccc;">
+            <h3>Recipe Details</h3>
+            <div id="recipe-details"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Log the raw missing_one data
+            const missingOneData = {{ missing_one | tojson }};
+            console.log('Raw missing_one data:', missingOneData);
+
+            // Populate the dropdown with only existing missing counts (excluding 0)
+            const table = document.getElementById('drinks-table');
+            if (!table) {
+                console.error('Drinks table not found');
+                return;
+            }
+
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            const uniqueMissingCounts = new Set();
+
+            // Collect unique missing counts
+            console.log('Rows:', rows.length);
+            for (let i = 0; i < rows.length; i++) {
+                const missing = parseInt(rows[i].getAttribute('data-missing')) || 0;
+                console.log(`Row ${i} missing: ${missing}`);
+                if (!isNaN(missing) && missing > 0) {
+                    uniqueMissingCounts.add(missing);
+                }
+            }
+            console.log('Unique missing counts:', Array.from(uniqueMissingCounts));
+
+            // Populate the dropdown with unique values, sorted
+            const dropdown = document.getElementById('missing-ingredients-filter');
+            const sortedMissingCounts = Array.from(uniqueMissingCounts).sort((a, b) => a - b);
+            if (sortedMissingCounts.length > 0) {
+                sortedMissingCounts.forEach(count => {
+                    const option = document.createElement('option');
+                    option.value = count;
+                    option.textContent = count;
+                    dropdown.appendChild(option);
+                });
+                // Set default value to 1 if it exists, otherwise the smallest available
+                dropdown.value = sortedMissingCounts.includes(1) ? 1 : sortedMissingCounts[0];
+            } else {
+                const option = document.createElement('option');
+                option.value = 1;
+                option.textContent = 1;
+                dropdown.appendChild(option);
+                dropdown.value = 1;
+            }
+
+            // Trigger initial filter
+            filterDrinks();
+
+            // Recipe click handler
+            window.showRecipe = function(row) {
+                const drink = row.getAttribute('data-drink');
+                const recipeDetailsDiv = document.getElementById('recipe-details');
+                fetch(`/recipe/${drink}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        let detailsHtml = `<h4>${data.name}</h4>`;
+                        for (const [key, value] of Object.entries(data)) {
+                            if (key !== 'name' && key !== 'ingredients') {
+                                const formattedKey = key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                const displayValue = value !== null && value !== '' ? value : 'N/A';
+                                detailsHtml += `<p><strong>${formattedKey}:</strong> ${displayValue}</p>`;
+                            }
+                        }
+                        detailsHtml += `<p><strong>Ingredients:</strong></p><ul>`;
+                        data.ingredients.forEach(ing => {
+                            detailsHtml += `<li>${ing.quantity || ''} ${ing.unit || ''} ${ing.ingredient}</li>`;
+                        });
+                        detailsHtml += `</ul>`;
+                        recipeDetailsDiv.innerHTML = detailsHtml;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching recipe:', error);
+                        recipeDetailsDiv.innerHTML = '<p>Error loading recipe details.</p>';
+                    });
+            };
+        });
+
+        // Filter drinks based on the exact number of missing ingredients
+        function filterDrinks() {
+            const dropdown = document.getElementById('missing-ingredients-filter');
+            const exactMissing = parseInt(dropdown.value) || 1; // Default to 1 if invalid
+            const table = document.getElementById('drinks-table');
+            if (!table) {
+                console.error('Drinks table not found during filter');
+                return;
+            }
+
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            console.log(`Filtering for exact missing: ${exactMissing}`);
+
+            for (let i = 0; i < rows.length; i++) {
+                const missing = parseInt(rows[i].getAttribute('data-missing')) || 0;
+                console.log(`Row ${i} missing: ${missing}, showing: ${missing === exactMissing}`);
+                if (missing === exactMissing) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        }
+    </script>
+    <style>
+        table {
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        tr:hover {
+            background-color: #f09898;
+            cursor: pointer;
+        }
+        .sort-arrow {
+            margin-left: 5px;
+        }
+    </style>
+    <a href="{{ url_for('drink_maker.drink_maker') }}">Back to Drink Maker</a>
+{% endblock %}
