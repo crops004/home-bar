@@ -2,11 +2,15 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from routes import drink_maker, bar, recipes
 from utils import get_db_connection, load_lists
 from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = 'super-secret-dev-key'
+app.secret_key = os.getenv('SECRET_KEY')
 lists = load_lists()
 app.config['LISTS'] = lists
 
