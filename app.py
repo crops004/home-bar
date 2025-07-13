@@ -26,7 +26,7 @@ def login():
     if request.method == 'POST':
         if request.form['username'] == os.getenv('USERNAME') and request.form['password'] == os.getenv('PASSWORD'):
             session['logged_in'] = True
-            return redirect(url_for('bar'))  # or your home route
+            return redirect(url_for('bar.bar'))  # or your home route
         else:
             flash('Invalid credentials')
     return render_template('login.html')
