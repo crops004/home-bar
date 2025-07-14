@@ -3,11 +3,11 @@
 {% block content %}
 
     <div class="px-4 text-center">
-        <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto mb-4 w-96 h-auto">
+        <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto w-80 h-auto">
 
-        <p class="text-lg font-semibold pb-4">Explore your bar, recipes, and what you can make!</p>
+        <p class="text-base font-semibold pb-8">Explore your bar, recipes, and what you can make!</p>
 
-        <div class="flex flex-col sm:flex-row justify-center gap-6">
+        <div class="flex flex-col sm:flex-row justify-center gap-5">
             <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
                 <a href="{{ url_for('bar.bar') }}">View Bar Contents</a>
             </button>

@@ -39,14 +39,13 @@ function showToast(message, duration = 3000) {
 }
 </script>
 
-<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-md sm:text-lg flex flex-col">
-    <nav class="bg-white shadow-md px-4 py-3 mb-4 sticky top-0 z-10">
-        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3">
+<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-sm sm:text-lg flex flex-col">
+    <nav class="bg-white shadow-md px-2 py-3 mb-2 sticky top-0 z-10">
+        <div class="flex flex-wrap justify-center gap-x-2 gap-y-3">
             <a href="{{ url_for('home') }}" class="hover:underline">Home</a> |
             <a href="{{ url_for('bar.bar') }}" class="hover:underline">Bar Contents</a> |
             <a href="{{ url_for('recipes.recipes') }}" class="hover:underline">Recipe Collection</a> |
             <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:underline">Drink Maker</a>
-            
         </div>
     </nav>
     <!-- Main content that fills available space -->
@@ -56,7 +55,7 @@ function showToast(message, duration = 3000) {
 
     <!-- Footer pinned to bottom -->
     <footer class="bg-white shadow-md px-4 py-3 mt-5 sticky bottom-0">
-        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 px-8">
+        <div class="flex flex-wrap justify-center gap-x-2 gap-y-3 px-8">
             <a href="{{ url_for('manage_lists') }}" class="hover:underline">Manage Lists</a> |
             <a href="{{ url_for('possible_ingredients') }}" class="hover:underline">Possible Ingredients</a> |
             {% if session.logged_in %}
@@ -65,14 +64,16 @@ function showToast(message, duration = 3000) {
         </div>  
     </footer>
     <div class="fixed bottom-0 right-0 bg-black text-white text-xs px-2 py-1 z-50">
-        <span id="width"></span>px wide
+        <span id="width"></span>px wide × <span id="height"></span>px tall
     </div>
     <script>
-        function updateWidth() {
+        function updateViewportSize() {
             document.getElementById('width').textContent = window.innerWidth;
+            document.getElementById('height').textContent = window.innerHeight;
         }
-        updateWidth();
-        window.addEventListener('resize', updateWidth);
+
+        window.addEventListener('resize', updateViewportSize);
+        window.addEventListener('DOMContentLoaded', updateViewportSize);
     </script>
 </body>
 </html>
