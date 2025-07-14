@@ -1,11 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-    <h1>Welcome to My Cocktail App</h1>
-    <p>Explore your bar, recipes, and what you can make!</p>
-    <ul>
-        <li><a href="{{ url_for('bar.bar') }}">View Bar Contents</a></li>
-        <li><a href="{{ url_for('recipes.recipes') }}">View Recipe Collection</a></li>
-        <li><a href="{{ url_for('drink_maker.drink_maker') }}">Go to Drink Maker</a></li>
-    </ul>
+
+    <div class="px-4 text-center">
+        <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto mb-4 w-96 h-auto">
+
+        <p class="text-xl font-semibold pb-4">Explore your bar, recipes, and what you can make!</p>
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+                <a href="{{ url_for('bar.bar') }}">View Bar Contents</a>
+            </button>
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+                <a href="{{ url_for('recipes.recipes') }}">View Recipe Collection</a>
+            </button>
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+                <a href="{{ url_for('drink_maker.drink_maker') }}">Go to Drink Maker</a>
+            </button>
+        </div>
+    </div>
+
 {% endblock %}

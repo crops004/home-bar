@@ -38,22 +38,30 @@ function showToast(message, duration = 3000) {
 }
 </script>
 
-<body class="bg-gray-100 min-h-screen max-w-[1080px] mx-auto text-slate-900 relative text-sm sm:text-base">
-    <nav class="bg-white shadow-md px-4 py-3 mb-6">
-        <div class="flex flex-wrap justify-between gap-4 px-4">
+<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-sm sm:text-base flex flex-col">
+    <nav class="bg-white shadow-md px-4 py-3 mb-5 sticky top-0 z-10">
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3">
             <a href="{{ url_for('home') }}" class="hover:underline">Home</a> |
             <a href="{{ url_for('bar.bar') }}" class="hover:underline">Bar Contents</a> |
             <a href="{{ url_for('recipes.recipes') }}" class="hover:underline">Recipe Collection</a> |
-            <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:underline">Drink Maker</a> |
+            <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:underline">Drink Maker</a>
+            
+        </div>
+    </nav>
+    <!-- Main content that fills available space -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer pinned to bottom -->
+    <footer class="bg-white shadow-md px-4 py-3 mt-5 sticky bottom-0">
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 px-8">
             <a href="{{ url_for('manage_lists') }}" class="hover:underline">Manage Lists</a> |
             <a href="{{ url_for('possible_ingredients') }}" class="hover:underline">Possible Ingredients</a> |
             {% if session.logged_in %}
                 <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
             {% endif %}
-        </div>
-    </nav>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+        </div>  
+    </footer>
 </body>
 </html>
