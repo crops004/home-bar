@@ -11,5 +11,5 @@ venv/
 # Ignore macOS metadata
 .DS_Store
 
-# ignore db files
-*.db
+# ignore only local dev DB
+cocktail_dev.db
