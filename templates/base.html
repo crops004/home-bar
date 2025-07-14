@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}My Cocktail App{% endblock %}</title>
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,8 +39,8 @@ function showToast(message, duration = 3000) {
 }
 </script>
 
-<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-xl sm:text-base flex flex-col">
-    <nav class="bg-white shadow-md px-4 py-3 mb-5 sticky top-0 z-10">
+<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-md sm:text-lg flex flex-col">
+    <nav class="bg-white shadow-md px-4 py-3 mb-4 sticky top-0 z-10">
         <div class="flex flex-wrap justify-center gap-x-6 gap-y-3">
             <a href="{{ url_for('home') }}" class="hover:underline">Home</a> |
             <a href="{{ url_for('bar.bar') }}" class="hover:underline">Bar Contents</a> |
@@ -63,5 +64,15 @@ function showToast(message, duration = 3000) {
             {% endif %}
         </div>  
     </footer>
+    <div class="fixed bottom-0 right-0 bg-black text-white text-xs px-2 py-1 z-50">
+        <span id="width"></span>px wide
+    </div>
+    <script>
+        function updateWidth() {
+            document.getElementById('width').textContent = window.innerWidth;
+        }
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+    </script>
 </body>
 </html>
