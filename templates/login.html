@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-    <label for="username">Username:</label><br>
-    <input type="text" name="username" required><br>
-    <label for="password">Password:</label><br>
-    <input type="password" name="password" required><br><br>
-    <button type="submit">Login</button>
-</form>
-{% if get_flashed_messages() %}
-    <p style="color:red;">{{ get_flashed_messages()[0] }}</p>
-{% endif %}
+<div class="flex flex-col items-center justify-center min-h-[75vh] px-4">
+    <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto w-80 h-auto">
+    <form method="post" class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
+        <div class="mb-4">
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username:</label>
+            <input type="text" name="username" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200">
+        </div>
+
+        <div class="mb-6">
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password:</label>
+            <input type="password" name="password" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200">
+        </div>
+
+        <button type="submit"
+            class="w-full bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+            Login
+        </button>
+
+        {% if get_flashed_messages() %}
+            <p class="mt-4 text-red-600 text-sm text-center">{{ get_flashed_messages()[0] }}</p>
+        {% endif %}
+    </form>
+</div>
 {% endblock %}
