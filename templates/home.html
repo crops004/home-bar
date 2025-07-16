@@ -3,18 +3,19 @@
 {% block content %}
 
     <div class="px-4 text-center">
-        <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto w-80 h-auto">
+        <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" 
+                class="mx-auto w-80 h-auto sm:w-96 md:w-112 lg:w-128">
 
-        <p class="text-base sm:text-lg font-semibold pb-8">Explore your bar, recipes, and what you can make!</p>
+        <p class="text-base font-semibold pb-8 sm:text-lg sm:pb-10 md:text-xl md:pb-12 lg:text-2xl lg:pb-14">Explore your bar, recipes, and what you can make!</p>
 
-        <div class="flex flex-col sm:flex-row justify-center gap-5">
-            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+        <div class="flex flex-col sm:flex-row justify-center gap-5 sm:text-lg md:gap-7 md:text-xl md:gap-9 lg:text-2xl lg:gap-11">
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition sm:px-6 md:px-8 lg:px-10">
                 <a href="{{ url_for('bar.bar') }}">View Bar Contents</a>
             </button>
-            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition sm:px-6 md:px-8 lg:px-10">
                 <a href="{{ url_for('recipes.recipes') }}">View Recipe Collection</a>
             </button>
-            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
+            <button class="bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition sm:px-6 md:px-8 lg:px-10">
                 <a href="{{ url_for('drink_maker.drink_maker') }}">Go to Drink Maker</a>
             </button>
         </div>

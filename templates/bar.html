@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Bar Contents{% endblock %}
 {% block content %}
-    <div class="text-center font-semibold text-2xl text-zinc-800 pt-2 pb-2">Bar Contents</div>
-
+    <div class="relative flex justify-start px-10 mt-4">
+        <div class="bg-gradient-to-r from-yellow-800 to-emerald-700 border border-white text-zinc-200 font-semibold text-2xl px-6 py-1 rounded-full shadow-md shadow-emerald-400/50">
+            Bar Contents
+        </div>
+    </div>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <script>
@@ -25,7 +28,8 @@
         <!-- Filter Button -->
         <button onclick="openFilterModal()" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Filter Items">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white">
-                <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836Z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 
+                        3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836Z" clip-rule="evenodd" />
             </svg>
         </button>
 
@@ -42,10 +46,10 @@
     <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-40 transition-opacity duration-200">
         <div class="modal-box bg-white p-6 rounded shadow-lg w-[90%] max-w-md relative transform scale-95 opacity-0 transition-all duration-200">
             <button onclick="closeAddModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">&times;</button>
-            <h2 class="text-lg font-semibold mb-2">Add New Item</h2>
-            <form method="post">
-                <label for="name">Name:</label>
-                <input type="text" id="name-input" placeholder="Start typing to filter..." onkeyup="filterDropdown()" required>
+            <h2 class="text-lg font-semibold mb-2">Add to Bar</h2>
+            <form method="post" onsubmit="return submitWithFields(event)">
+                <label for="name">Name: </label>
+                <input type="text" id="name-input" placeholder=" Start typing to filter..." onkeyup="filterDropdown()" required>
                 <select id="name" name="name" style="display: none;" required onchange="updateFields()">
                     <option value="">Select an ingredient</option>
                     {% for name in possible_names %}
@@ -54,21 +58,24 @@
                 </select>
                 <div id="name-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
 
-                <!-- Category/Subcategory: hidden until ingredient selected -->
-                <div id="category-fields" style="display: none; margin-top: 10px;">
-                    <div id="category-wrapper">
-                        <label for="category">Category:</label>
-                        <input type="text" id="category" name="category" readonly required>
-                    </div>
-                    <div id="subcategory-wrapper">
-                        <label for="sub_category">Sub Category (Optional):</label>
-                        <input type="text" id="sub_category" name="sub_category" readonly>
-                    </div>
-                </div>
+                <!-- Hidden inputs -->
+                <input type="hidden" id="category" name="category" required>
+                <input type="hidden" id="sub_category" name="sub_category">
 
-                <button type="button" onclick="clearIngredientFields()" style="margin-top: 10px; background-color: #bbb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Clear</button>
+                <button type="button" onclick="clearIngredientFields()" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform text-white" title="Clear">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                        <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 
+                                1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 
+                                15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 
+                                1.5.058l.345-9Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
 
-                <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Add to Bar</button>
+                <button type="submit" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Add Bar Item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </button>
             </form>
         </div>
     </div>
@@ -97,9 +104,9 @@
     <!-- Modifiers & Mixers Table -->
     <h2 class="text-xl font-semibold m-4">Modifiers & Mixers</h2>
     {% if other_items %}
-        <div class="overflow-x-auto rounded shadow-md mb-4">
-            <table id="other-items-table" class="w-full table-fixed border border-gray-300 text-left text-[.7rem]">
-                <thead class="bg-gray-100 text-gray-700">
+        <div class="overflow-x-auto rounded shadow-md mb-4 px-2">
+            <table id="other-items-table" class="w-full table-fixed border border-gray-300 bg-emerald-50 text-left text-[.7rem]">
+                <thead class="bg-emerald-700 text-zinc-200">
                     <tr>
                         <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('other-items-table', 0)">
                             Name <span class="sort-arrow"></span>
@@ -144,16 +151,16 @@
     <h2 class="text-xl font-semibold m-4">Spirits</h2>
     {% if spirits %}
         <div class="overflow-x-auto rounded shadow-md mb-4 px-2">
-            <table id="spirits-table" class="w-full table-fixed border border-gray-300 text-left text-[0.7rem]">
-                <thead class="bg-gray-100 text-gray-700">
+            <table id="spirits-table" class="w-full table-fixed border border-gray-300 bg-emerald-50 text-left text-[0.7rem]">
+                <thead class="bg-emerald-700 text-zinc-200">
                     <tr>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer" onclick="sortTable('spirits-table', 0)">
+                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 0)">
                             Name <span class="sort-arrow"></span>
                         </th>
-                        <th class="w-1/4 px-2 py-1 cursor-pointer" onclick="sortTable('spirits-table', 1)">
+                        <th class="w-1/4 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 1)">
                             Category <span class="sort-arrow"></span>
                         </th>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer" onclick="sortTable('spirits-table', 2)">
+                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 2)">
                             Sub Category <span class="sort-arrow"></span>
                         </th>
                     </tr>
@@ -275,6 +282,42 @@
             input.value = '';
             filterAllTables(); // triggers reset logic
             document.getElementById('clear-filter-btn').classList.add('hidden');
+        }
+
+        // Submit form with ingredient details
+        async function submitWithFields(event) {
+            event.preventDefault(); // stop form from submitting right away
+
+            const name = document.getElementById('name').value;
+            const categoryInput = document.getElementById('category');
+            const subCategoryInput = document.getElementById('sub_category');
+
+            // Clear previous values
+            categoryInput.value = '';
+            subCategoryInput.value = '';
+
+            if (name) {
+                try {
+                    const response = await fetch(`/ingredient-details/${encodeURIComponent(name)}`);
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    if (data.category) categoryInput.value = data.category;
+                    if (data.sub_category) subCategoryInput.value = data.sub_category;
+
+                    event.target.submit(); // ✅ now that everything is filled in, submit the form
+
+                } catch (err) {
+                    console.error("Error fetching ingredient details:", err);
+                    alert("There was a problem adding the item.");
+                }
+            } else {
+                alert("Please select a valid item.");
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
