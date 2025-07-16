@@ -24,11 +24,23 @@ app.register_blueprint(recipes.recipes_bp, url_prefix='/recipe')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form['username'] == os.getenv('USERNAME') and request.form['password'] == os.getenv('PASSWORD'):
+        submitted_username = request.form['username']
+        submitted_password = request.form['password']
+        expected_username = os.getenv('USERNAME')
+        expected_password = os.getenv('PASSWORD')
+
+        # Debug output
+        print(f"[DEBUG] Submitted username: {submitted_username}")
+        print(f"[DEBUG] Submitted password: {submitted_password}")
+        print(f"[DEBUG] Expected username: {expected_username}")
+        print(f"[DEBUG] Expected password: {expected_password}")
+
+        if submitted_username == expected_username and submitted_password == expected_password:
             session['logged_in'] = True
             return redirect(url_for('home'))  # or your home route
         else:
             flash('Invalid credentials')
+
     return render_template('login.html')
 
 @app.route('/logout')
