@@ -225,6 +225,13 @@
         </div>
     </div>
 
+    <!-- Hidden select for units -->
+    <select id="unit-template" style="display: none;">
+        {% for unit in lists['units'] %}
+            <option value="{{ unit }}">{{ unit }}</option>
+        {% endfor %}
+    </select>
+
     <script>
         let ingredientCount = 1;
         let editIngredientCount = 0;
@@ -657,25 +664,21 @@
                         data.ingredients.forEach((ing, index) => {
                             const row = document.createElement('div');
                             row.className = 'ingredient-row';
-                            const select = document.createElement('select');
+
+                            const templateSelect = document.getElementById('unit-template');
+                            const select = templateSelect.cloneNode(true);
+                            select.style.display = '';
+                            select.id = '';
                             select.name = `unit_${index}`;
-                            {% for unit in lists['units'] %}
-                                (function() {
-                                    let option = document.createElement('option');
-                                    option.value = "{{ unit }}";
-                                    option.text = "{{ unit }}";
-                                    if (ing.unit === "{{ unit }}" || (!ing.unit && "{{ unit }}" === "oz")) {
-                                        option.selected = true;
-                                    }
-                                    select.appendChild(option);
-                                })();
-                            {% endfor %}
+                            select.value = ing.unit || 'oz';
+
                             row.innerHTML = `
                                 <input type="text" name="ingredient_${index}" class="ingredient-input" value="${ing.ingredient || ''}" onkeyup="filterIngredients(this, ${index})">
                                 <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
                                 <input type="text" name="quantity_${index}" value="${ing.quantity || ''}" style="width: 100px;">
                             `;
                             row.appendChild(select);
+
                             const removeButton = document.createElement('button');
                             removeButton.type = 'button';
                             removeButton.textContent = 'Remove';
