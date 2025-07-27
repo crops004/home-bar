@@ -13,6 +13,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 AUTH_USERNAME = os.getenv('USERNAME')
 AUTH_PASSWORD = os.getenv('PASSWORD')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 lists = load_lists()
 app.config['LISTS'] = lists
 
@@ -278,8 +279,10 @@ if __name__ == '__main__':
         if os.getenv("FLASK_AUTO_OPEN_BROWSER") == "true":
             threading.Timer(1.0, open_browser).start()  # open browser after 1 sec
         
+        print(">>> FLASK_DEV MODE ENABLED")
+
         server = Server(app.wsgi_app)
-        server.watch('templates/**/*.html')     # watch all HTML templates
+        server.watch('templates/*.html')     # watch all HTML templates
         server.watch('static/**/*.css')         # watch Tailwind output
         server.watch('static/**/*.js')          # watch any custom JS
         server.serve(port=5000, debug=True)

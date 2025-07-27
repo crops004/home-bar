@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+/* Optional: only if you use Tailwind plugins */
+@layer components {
+  /* You can add shared custom components here if needed */
+}
+
+@layer utilities {
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+}
