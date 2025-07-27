@@ -4,6 +4,9 @@ from utils import get_db_connection, load_lists
 from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
 import os
 from dotenv import load_dotenv
+from livereload import Server
+import webbrowser
+import threading
 
 load_dotenv()
 
@@ -260,7 +263,21 @@ def update_possible_ingredient(id):
         conn.close()
         return jsonify({'message': f'Error updating ingredient: {str(e)}'}), 500
 
+# Error handler for 404 Not Found
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
-    
+# Route to handle the home page and open the browser automatically
+def open_browser():
+    webbrowser.open_new('http://localhost:5000')
+
+# Start the Flask app and open the browser in a separate thread
 if __name__ == '__main__':
-    app.run(debug=True)
+    if os.getenv("FLASK_AUTO_OPEN_BROWSER") == "true":
+        threading.Timer(1.0, open_browser).start()  # open browser after 1 sec
+    server = Server(app.wsgi_app)
+    server.watch('templates/**/*.html')     # watch all HTML templates
+    server.watch('static/**/*.css')         # watch Tailwind output
+    server.watch('static/**/*.js')          # watch any custom JS
+    server.serve(port=5000, debug=True)

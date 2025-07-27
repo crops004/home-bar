@@ -13,3 +13,10 @@ venv/
 
 # ignore only local dev DB
 cocktail_dev.db
+
+# Node
+node_modules/
+*.log
+
+# Tailwind output
+/static/dist/output.css
