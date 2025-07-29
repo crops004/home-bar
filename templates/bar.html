@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Bar Contents{% endblock %}
 {% block content %}
-    <div class="relative flex justify-start px-10 mt-4">
-        <div class="bg-gradient-to-r from-yellow-800 to-emerald-700 border border-white text-zinc-200 font-semibold text-2xl px-6 py-1 rounded-full shadow-md shadow-emerald-400/50">
-            Bar Contents
-        </div>
-    </div>
+    
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <script>
@@ -15,33 +11,105 @@
     </script>
     {% endif %}
     {% endwith %}
-    <!-- BAR TEMPLATE TEST -->
+
     <!-- Add Item and Filter Buttons -->
-    <div class="sticky top-14 z-40 flex justify-end pr-4 gap-2" id="action-buttons">
-        <!-- Add Item Button -->
-        <button onclick="openAddModal()" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Add Item">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-        </button>
+    <div class="sticky top-[90px] z-50 bg-background-dark  shadow-md p-4">
+        <div class="flex justify-between items-center px-4 py-2 pb-6 border-b border-border-muted mb-6">
+            <h2 class="bg-background-mid border border-border rounded-full shadow-2xl px-4 py-2 ml-4 text-sm font-medium text-text-normal">Bar Contents</h2>
+            <div class="sticky top-18 z-40 flex justify-end pr-4 gap-2" id="action-buttons">
+                <!-- Add Item Button -->
+                <button onclick="openAddModal()"
+                        class="group bg-background-mid border border-border p-2 rounded-full shadow hover:scale-105 transition-transform"
+                        title="Add Item">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="w-5 h-5 stroke-text-muted group-hover:stroke-logo transition-colors">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </button>
 
-        <!-- Filter Button -->
-        <button onclick="openFilterModal()" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Filter Items">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white">
-                <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 
-                        3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836Z" clip-rule="evenodd" />
-            </svg>
-        </button>
+                <!-- Filter Button -->
+                <button onclick="openFilterModal()" 
+                        class="group bg-background-mid border border-border p-2 rounded-full shadow hover:scale-105 transition-transform" 
+                        title="Filter Items">
+                    <svg xmlns="http://www.w3.org/2000/svg" 
+                        viewBox="0 0 24 24" 
+                        fill="currentColor" 
+                        class="w-5 h-5 text-text-muted group-hover:text-logo transition-colors">
+                            <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 
+                                3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
 
-        <!-- Clear Filter Button -->
-        <button id="clear-filter-btn" onclick="clearFilter()" class="hidden bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Clear Filter">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-        </button>
+                <!-- Clear Filter Button -->
+                <button id="clear-filter-btn" onclick="clearFilter()" class="hidden bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Clear Filter">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Filter Buttons -->
+        <div class="flex flex-wrap items-center gap-2 px-2">
+            <button class="filter-btn" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="spirit">Spirits</button>
+            <button class="filter-btn" data-filter="modifier">Modifiers & Mixers</button>
+            <button class="filter-btn" data-filter="gin">Gin</button>
+            <button class="filter-btn" data-filter="whiskey">Whiskey</button>
+            <button class="filter-btn" data-filter="rum">Rum</button>
+            <button class="filter-btn" data-filter="tequila">Tequila</button>
+        </div>
     </div>
 
-
+    <!-- Combined Table -->
+    <!-- Simulated Sticky Header -->
+    <div class="sticky top-[241px] z-40 bg-background-dark px-4 font-semibold text-[.65rem] sm:text-xs">
+        <div class="grid grid-cols-4 w-full text-text-muted uppercase border-b border-border-muted">
+            <div class="px-2 py-2 cursor-default" data-col="0" onclick="sortTable('bar-items-table', 0, this)">Name</div>
+            <div class="px-2 py-2 cursor-default" data-col="1" onclick="sortTable('bar-items-table', 1, this)">Category</div>
+            <div class="px-2 py-2 cursor-default" data-col="2" onclick="sortTable('bar-items-table', 2, this)">Sub Category</div>
+            <div class="px-2 py-2 text-right"></div>
+        </div>
+    </div>
+    {% if items %}
+    <!-- Full Table -->
+    <div class="overflow-x-auto rounded shadow-md mb-4 px-4">
+        <table id="bar-items-table" class="w-full table-fixed bg-background-dark text-left text-[.65rem] sm:text-xs">
+            <tbody>
+                {% for item in items %}
+                    <tr class="hover:bg-background-mid border-b border-border-muted bar-row"
+                        data-category="{{ item['category'] }}"
+                        data-subcategory="{{ item['sub_category'] }}"
+                        data-type="{{ item['type'] }}">
+                        <td class="px-2 py-2">{{ item['name'] }}</td>
+                        <td class="px-2 py-2">{{ item['category'] }}</td>
+                        <td class="px-2 py-2">{{ item['sub_category'] or '' }}</td>
+                        <td class="px-2 py-2 text-right">
+                            <button 
+                                class="delete-item text-red-500 hover:text-red-700"
+                                data-name="{{ item['name'] }}"
+                                title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
+                                    <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 
+                                            1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p>No matching items in your bar.</p>
+    {% endif %}
+    
     <!-- Add Item Modal -->
     <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity duration-200">
         <div class="modal-box bg-white p-6 rounded shadow-lg w-[90%] max-w-md relative transform scale-95 opacity-0 transition-all duration-200">
@@ -101,101 +169,6 @@
         </div>
     </div>
 
-    <!-- Modifiers & Mixers Table -->
-    <h2 class="text-xl font-semibold m-4">Modifiers & Mixers</h2>
-    {% if other_items %}
-        <div class="overflow-x-auto rounded shadow-md mb-4 px-2">
-            <table id="other-items-table" class="w-full table-fixed border border-gray-300 bg-emerald-50 text-left text-[.7rem]">
-                <thead class="bg-emerald-700 text-zinc-200">
-                    <tr>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('other-items-table', 0)">
-                            Name <span class="sort-arrow"></span>
-                        </th>
-                        <th class="w-1/4 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('other-items-table', 1)">
-                            Category <span class="sort-arrow"></span>
-                        </th>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('other-items-table', 2)">
-                            Sub Category <span class="sort-arrow"></span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in other_items %}
-                        <tr class="hover:bg-gray-50 border-t">
-                            <td class="px-2 py-1">{{ item['name'] }}</td>
-                            <td class="px-2 py-1">{{ item['category'] }}</td>
-                            <td class="px-2 py-1 text-right">
-                                <span class="float-left">{{ item['sub_category'] or '' }}</span>
-                                <button 
-                                    class="delete-item text-red-500 hover:text-red-700"
-                                    data-name="{{ item['name'] }}"
-                                    title="Delete"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3">
-                                        <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 
-                                                                    1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    <div id="misc-no-items" style="display: none; color: #666;">No matching items</div>
-    {% else %}
-        <p>No misc items in your bar.</p>
-    {% endif %}
-
-    <!-- Spirits Table -->
-    <h2 class="text-xl font-semibold m-4">Spirits</h2>
-    {% if spirits %}
-        <div class="overflow-x-auto rounded shadow-md mb-4 px-2">
-            <table id="spirits-table" class="w-full table-fixed border border-gray-300 bg-emerald-50 text-left text-[0.7rem]">
-                <thead class="bg-emerald-700 text-zinc-200">
-                    <tr>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 0)">
-                            Name <span class="sort-arrow"></span>
-                        </th>
-                        <th class="w-1/4 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 1)">
-                            Category <span class="sort-arrow"></span>
-                        </th>
-                        <th class="w-3/8 px-2 py-1 cursor-pointer text-xs text-semibold" onclick="sortTable('spirits-table', 2)">
-                            Sub Category <span class="sort-arrow"></span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in spirits %}
-                        <tr class="hover:bg-gray-50 border-t">
-                            <td class="px-2 py-1">{{ item['name'] }}</td>
-                            <td class="px-2 py-1">{{ item['category'] }}</td>
-                            <td class="px-2 py-1 align-middle">
-                                <div class="flex justify-between items-center gap-2 w-full">
-                                    <span class="break-words">
-                                    {{ item['sub_category'] or '' }}
-                                    </span>
-                                <button 
-                                    class="shrink-0 delete-item text-red-500 hover:text-red-700"
-                                    data-name="{{ item['name'] }}"
-                                    title="Delete"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3">
-                                        <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 
-                                                                    1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <div id="spirits-no-items" style="display: none; color: #666;">No matching items</div>
-        </div>
-    {% else %}
-        <p>No spirits in your bar.</p>
-    {% endif %}
-    
     <script>
         // Open Add Modal and focus the first input
         function openAddModal() {
@@ -469,33 +442,73 @@
             });
 
             // Sorting function
-            window.sortTable = function(tableId, colIndex) {
+            window.sortTable = function(tableId, colIndex, headerDiv) {
                 const table = document.getElementById(tableId);
-                const tbody = table.getElementsByTagName('tbody')[0];
-                const rows = Array.from(tbody.getElementsByTagName('tr'));
-                const header = table.getElementsByTagName('th')[colIndex];
-                const currentDirection = header.getAttribute('data-sort') || 'asc';
-                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // Determine direction from data attribute
+                const current = headerDiv.getAttribute('data-sort') || 'none';
+                const newDirection = current === 'asc' ? 'desc' : 'asc';
+                
+                // Clear sort state from all header divs
+                const headers = headerDiv.parentElement.querySelectorAll('div[data-col]');
+                headers.forEach(h => h.removeAttribute('data-sort'));
 
-                // Update sort direction
-                header.setAttribute('data-sort', newDirection);
-                // Update sort arrow
-                const arrows = table.querySelectorAll('.sort-arrow');
-                arrows.forEach(arrow => arrow.textContent = '');
-                header.querySelector('.sort-arrow').textContent = newDirection === 'asc' ? '▲' : '▼';
+                // Set the new direction on the clicked header
+                headerDiv.setAttribute('data-sort', newDirection);
 
-                rows.sort((rowA, rowB) => {
-                    const cellA = rowA.cells[colIndex].textContent.trim().toLowerCase();
-                    const cellB = rowB.cells[colIndex].textContent.trim().toLowerCase();
-                    if (newDirection === 'asc') {
-                        return cellA.localeCompare(cellB);
-                    } else {
-                        return cellB.localeCompare(cellA);
-                    }
+                rows.sort((a, b) => {
+                    const cellA = a.children[colIndex].textContent.trim().toLowerCase();
+                    const cellB = b.children[colIndex].textContent.trim().toLowerCase();
+                    return newDirection === 'asc'
+                        ? cellA.localeCompare(cellB)
+                        : cellB.localeCompare(cellA);
                 });
 
-                // Re-append rows in sorted order
                 rows.forEach(row => tbody.appendChild(row));
+            };
+
+            // Attach click listener to all filter buttons
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const filter = button.dataset.filter;
+                    filterTable(filter);
+                });
+            });
+
+            // Filter table rows based on the selected filter
+            window.filterTable = function(filter) {
+                const rows = document.querySelectorAll('.bar-row');
+                const normalizedFilter = filter.toLowerCase();
+
+                // Highlight active button
+                const buttons = document.querySelectorAll('.filter-btn');
+                buttons.forEach(btn => btn.classList.remove('bg-background-mid', 'text-logo'));
+                const active = Array.from(buttons).find(btn => btn.dataset.filter === normalizedFilter);
+                if (active) {
+                    active.classList.add('bg-background-mid', 'text-logo');
+                }
+
+                rows.forEach(row => {
+                    const category = (row.dataset.category || '').toLowerCase();
+                    const subcategory = (row.dataset.subcategory || '').toLowerCase();
+                    const type = (row.dataset.type || '');
+
+                    let match = false;
+
+                    if (normalizedFilter === 'all') {
+                        match = true;
+                    } else if (normalizedFilter === 'spirit') {
+                        match = type === 'spirit';
+                    } else if (normalizedFilter === 'modifier') {
+                        match = type === 'modifier';
+                    } else {
+                        match = category === normalizedFilter || subcategory === normalizedFilter;
+                    }
+
+                    row.style.display = match ? '' : 'none';
+                });
             };
 
             window.filterAllTables = function() {

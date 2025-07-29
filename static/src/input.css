@@ -9,4 +9,39 @@
   .flex-center {
     @apply flex items-center justify-center;
   }
+  .filter-btn {
+        @apply bg-background-light border border-border text-[.65rem] px-3 py-1  rounded-full hover:bg-background-mid transition;
+    }
+}
+  
+@theme {
+  --color-background-dark: oklch(0.1 0 20);
+  --color-background-mid: oklch(0.15 0 20);
+  --color-background-light: oklch(0.2 0 20);
+  --color-text-normal: oklch(0.96 0 20);
+  --color-text-muted: oklch(0.76 0 20);
+  --color-border: oklch(0.4 0 20);
+  --color-border-muted: oklch(0.3 0 20);
+  --color-primary: oklch(0.76 0.1 20);
+  --color-secondary: oklch(0.76 0.1 200);
+  --color-danger: oklch(0.7 0.05 30);
+  --color-warning: oklch(0.7 0.05 100);
+  --color-success: oklch(0.7 0.05 160);
+  --color-info: oklch(0.7 0.05 260);
+  --color-light-bg-dark: oklch(0.92 0 20);
+  --color-light-bg-mid: oklch(0.96 0 20);
+  --color-light-bg-light: oklch(1 0 20);
+  --color-light-text-normal: oklch(0.15 0 20);
+  --color-light-text-muted: oklch(0.4 0 20);
+  --color-light-highlight: oklch(1 0 20);
+  --color-light-border: oklch(0.6 0 20);
+  --color-light-border-muted: oklch(0.7 0 20);
+  --color-light-primary: oklch(0.4 0.1 20);
+  --color-light-secondary: oklch(0.4 0.1 200);
+  --color-light-danger: oklch(0.5 0.05 30);
+  --color-light-warning: oklch(0.5 0.05 100);
+  --color-light-success: oklch(0.5 0.05 160);
+  --color-light-info: oklch(0.5 0.05 260);
+  --color-logo: hsl(40.82, 65.99%, 71.18%);
+  --color-logo-dark: hsl(40.82, 65.99%, 36%);
 }

@@ -5,9 +5,12 @@ module.exports = {
     './static/**/*.js',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/forms'),
-  ],
+  ]
 }

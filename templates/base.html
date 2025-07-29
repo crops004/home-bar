@@ -39,34 +39,114 @@ function showToast(message, duration = 3000) {
 }
 </script>
 
-<body class="bg-gray-100 min-h-screen max-w-[1000px] mx-auto text-slate-900 relative text-sm sm:text-lg md:text-xl lg:text-2xl flex flex-col">
-    <nav class="bg-white shadow-md px-2 py-3 mb-2 sticky top-0 z-10">
-        <div class="flex flex-wrap justify-center gap-x-2 gap-y-3 sm:gap-x-4 md:gap-x-6 lg:gap-x-8">
-            <a href="{{ url_for('home') }}" class="hover:underline">Home</a> |
-            <a href="{{ url_for('bar.bar') }}" class="hover:underline">Bar Contents</a> |
-            <a href="{{ url_for('recipes.recipes') }}" class="hover:underline">Recipe Collection</a> |
-            <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:underline">Drink Maker</a>
+<body class="bg-background-dark min-h-screen max-w-[1600px] mx-auto text-text-normal relative text-sm sm:text-lg md:text-xl lg:text-2xl flex flex-col">
+    <!-- Mobile NavBar -->
+    <nav class="sm:hidden flex justify-between items-center px-4 py-2 bg-background-mid border-b border-border shadow-md sticky top-0 z-50">
+    
+        <!-- Left: Hamburger + Logo -->
+        <div class="flex items-center gap-2">
+            <!-- Logo -->
+            <a href="{{ url_for('home') }}">
+                <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-8 w-auto">
+            </a>
+
+            <!-- Hamburger -->
+            <button id="menu-toggle" class="text-text-normal focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Right: Login/Logout -->
+        <div>
+            {% if session.logged_in %}
+                <a href="{{ url_for('logout') }}" class="text-sm bg-primary text-white rounded-full px-3 py-1.5 shadow hover:bg-danger">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="text-sm bg-primary text-white rounded-full px-3 py-1.5 shadow hover:bg-accent">Login</a>
+            {% endif %}
         </div>
     </nav>
+
+    <!-- Mobile Side Drawer -->
+    <div id="mobile-drawer" class="sm:hidden fixed z-50 top-0 left-0 h-full w-64 bg-background-mid shadow-lg transform -translate-x-full transition-transform duration-300 p-6 border-r border-border">
+        <div class="flex items-center gap-3 mb-6">
+            <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-8 w-auto">
+                <span class="text-lg font-semibold text-text-normal">Menu</span>
+        </div>
+        
+        <nav class="flex flex-col gap-4 text-sm text-text-normal font-medium">
+            <a href="{{ url_for('bar.bar') }}" class="hover:bg-background-light px-2 py-1 rounded">Bar Contents</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="hover:bg-background-light px-2 py-1 rounded">Recipe Collection</a>
+            <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:bg-background-light px-2 py-1 rounded">Drink Maker</a>
+            <a href="{{ url_for('manage_lists') }}" class="hover:bg-background-light px-2 py-1 rounded">Manage Lists</a>
+            <a href="{{ url_for('possible_ingredients') }}" class="hover:bg-background-light px-2 py-1 rounded">Possible Ingredients</a>
+        </nav>
+    </div>
+
+    <!-- Overlay for drawer -->
+    <div id="drawer-overlay"
+        class="sm:hidden fixed inset-0 bg-black bg-opacity-40 z-30 hidden">
+    </div>
+    
+    <!-- Desktop Nav (hidden on mobile) -->
+    <div class="hidden bg-background-dark sm:flex justify-between items-start gap-4 px-4 sticky top-0 z-50 pb-6 pt-4">
+        <!-- Left nav card -->
+        <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-1 ml-4">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4 md:gap-6 mx-2 text-sm font-medium text-text-normal">
+                <a href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-10 w-auto block">
+                </a>
+                <a href="{{ url_for('bar.bar') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'bar.bar' %}text-logo{% endif %}">Bar</a>
+                <a href="{{ url_for('recipes.recipes') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'recipes.recipes' %}text-logo{% endif %}">Recipes</a>
+                <a href="{{ url_for('drink_maker.drink_maker') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'drink_maker.drink_maker' %}text-logo{% endif %}">Mix!</a>
+ 
+            </div>
+        </nav>
+
+        <!-- Right nav card -->
+        <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-2 mr-4">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4 md:gap-6 mx-2 text-sm font-medium text-text-normal">
+                <a href="{{ url_for('manage_lists') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'manage_lists' %}text-logo{% endif %}">Lists</a>
+                <a href="{{ url_for('possible_ingredients') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'possible_ingredients' %}text-logo{% endif %}">Ingredients</a>
+                    {% if session.logged_in %}
+                        <a href="{{ url_for('logout') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Login</a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+
     <!-- Main content that fills available space -->
     <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer pinned to bottom -->
-    <footer class="bg-white shadow-md px-4 py-3 mt-5 sticky bottom-0">
-        <div class="flex flex-wrap justify-center gap-x-2 gap-y-3 px-8 sm:gap-x-4 md:gap-x-6 lg:gap-x-8">
-            <a href="{{ url_for('manage_lists') }}" class="hover:underline">Manage Lists</a> |
-            <a href="{{ url_for('possible_ingredients') }}" class="hover:underline">Possible Ingredients</a> |
-            {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
-            {% endif %}
-        </div>  
+    <footer >
+
     </footer>
     <div class="fixed bottom-0 right-0 bg-black text-white text-xs px-2 py-1 z-50">
         <span id="width"></span>px wide × <span id="height"></span>px tall
     </div>
+
     <script>
+        const menuToggle = document.getElementById('menu-toggle');
+        const drawer = document.getElementById('mobile-drawer');
+        const overlay = document.getElementById('drawer-overlay');
+
+        menuToggle.addEventListener('click', () => {
+            drawer.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+
+        overlay.addEventListener('click', () => {
+            drawer.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        });
+
         function updateViewportSize() {
             document.getElementById('width').textContent = window.innerWidth;
             document.getElementById('height').textContent = window.innerHeight;

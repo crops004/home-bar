@@ -22,27 +22,31 @@ def bar():
         flash(f"{name} added successfully to your bar.")
 
         return redirect(url_for('bar.bar'))
-    
-    # Fetch bar contents and possible ingredients
-    bar_contents_rows = conn.execute('SELECT name, category, sub_category FROM BarContents ORDER BY category, name').fetchall()
-    bar_contents = [dict(row) for row in bar_contents_rows]
-    
+        
     # Define spirit categories (based on your subcategories and context)
     spirit_categories = [
         'Absinthe', 'Aperitif', 'Bitters', 'Brandy', 'Cognac', 'Gin', 'Liqueur', 'Mezcal', 'Rum', 'Tequila', 'Vermouth', 'Vodka', 'Whiskey',
         'Digestif', 'Fortified Wine'
     ]
+
+    # Fetch bar contents and possible ingredients
+    bar_contents_rows = conn.execute('SELECT name, category, sub_category FROM BarContents ORDER BY category, name').fetchall()
+    bar_contents = [dict(row) for row in bar_contents_rows]
     
-    # Separate into spirits and other items
-    spirits = [item for item in bar_contents if item['category'] in spirit_categories or any(sub in spirit_categories for sub in lists['subcategories'].get(item['category'], []))]
-    other_items = [item for item in bar_contents if item not in spirits]
-    
+    # Tag each item with 'type': 'spirit' or 'modifier'
+    for item in bar_contents:
+        is_spirit = (
+            item['category'] in spirit_categories or 
+            any(sub in spirit_categories for sub in lists['subcategories'].get(item['category'], []))
+        )
+        item['type'] = 'spirit' if is_spirit else 'modifier'
+
     # Fetch possible names for the dropdown
     possible_names = conn.execute('SELECT DISTINCT name FROM PossibleIngredients ORDER BY name').fetchall()
     possible_names = [row['name'] for row in possible_names]
     
     conn.close()
-    return render_template('bar.html', spirits=spirits, other_items=other_items, possible_names=possible_names, lists=lists)
+    return render_template('bar.html', items=bar_contents, possible_names=possible_names, lists=lists)
 
 # Delete bar item route
 @bar_bp.route('/delete_bar_item/<string:name>', methods=['DELETE'])
