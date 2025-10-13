@@ -1,352 +1,397 @@
 {% extends "base.html" %}
 {% block title %}Possible Ingredients{% endblock %}
 {% block content %}
-    <h1>Possible Ingredients</h1>
-    
-    <!-- Form to add a new ingredient -->
-    <h2>Add New Ingredient</h2>
-    <form method="post">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
-        <label for="category">Category:</label>
-        <select id="category" name="category" required onchange="updateSubcategories()">
-            <option value="">Select a category</option>
-            {% for cat in categories %}
-                <option value="{{ cat }}">{{ cat }}</option>
-            {% endfor %}
-        </select>
-        <label for="sub_category">Sub Category (Optional):</label>
-        <select id="sub_category" name="sub_category">
-            <option value="">None</option>
-        </select>
-        <button type="submit" style="background-color: #4CAF50; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Add Ingredient</button>
-    </form>
-    
-    <!-- List of possible ingredients -->
-    <h2>Master List</h2>
-    {% if ingredients %}
-        <!-- Unified filter input -->
-        <div style="margin-bottom: 10px;">
-            <label for="filter-all">Filter:</label>
-            <input type="text" id="filter-all" onkeyup="filterTable()" placeholder="Filter by name, category, or sub category..." style="width: 300px;">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-semibold text-text-normal">Possible Ingredients</h1>
+            <p class="text-sm text-text-muted">Manage the master ingredient list used across your bar and recipes.</p>
         </div>
+        <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full bg-logo px-4 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+            onclick="openAddModal()"
+        >
+            <span class="text-lg leading-none">+</span>
+            Add Ingredient
+        </button>
+    </div>
 
-        <table border="1" style="border-collapse: collapse; width: 100%;">
-            <thead>
-                <tr>
-                    <th style="width: 50px; text-align: center;">Edit</th>
-                    <th style="width: 50px; text-align: center;">Delete</th>
-                    <th style="cursor: pointer;" onclick="sortTable('name')">Name <span id="sort-name">↕</span></th>
-                    <th style="cursor: pointer;" onclick="sortTable('category')">Category <span id="sort-category">↕</span></th>
-                    <th style="cursor: pointer;" onclick="sortTable('sub_category')">Sub Category <span id="sort-sub_category">↕</span></th>
-                </tr>
-            </thead>
-            <tbody id="ingredients-list">
-                {% for ingredient in ingredients %}
-                    <tr>
-                        <td style="width: 50px; text-align: center;">
-                            <button class="edit-ingredient" data-id="{{ ingredient['id'] }}" style="background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 5px 10px;">Edit</button>
-                        </td>
-                        <td style="width: 50px; text-align: center;">
-                            <button class="delete-ingredient" data-id="{{ ingredient['id'] }}" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 5px 10px;">X</button>
-                        </td>
-                        <td>{{ ingredient['name'] }}</td>
-                        <td>{{ ingredient['category'] }}</td>
-                        <td>{{ ingredient['sub_category'] or '' }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="mt-6 flex flex-wrap gap-4 items-end bg-background-mid/40 border border-border rounded-2xl p-4">
+        <div class="flex flex-col gap-1 w-full sm:max-w-sm">
+            <label for="ingredient-filter" class="text-xs uppercase tracking-wide text-text-muted">Search Ingredients</label>
+            <input
+                type="text"
+                id="ingredient-filter"
+                placeholder="Search by name, category, or subcategory..."
+                oninput="filterIngredientCards()"
+                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
+            >
+        </div>
+        <button
+            type="button"
+            onclick="resetIngredientFilter()"
+            class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition"
+        >
+            Clear Search
+        </button>
+    </div>
+
+    {% if ingredients %}
+    <div id="ingredient-grid" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {% for ingredient in ingredients %}
+        <article
+            class="ingredient-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
+            data-id="{{ ingredient['id'] }}"
+            data-name="{{ ingredient['name'] }}"
+            data-category="{{ ingredient['category'] or '' }}"
+            data-subcategory="{{ ingredient['sub_category'] or '' }}"
+        >
+            <div class="p-4 space-y-3">
+                <header class="flex items-start justify-between gap-3">
+                    <h3 class="text-lg font-semibold text-text-normal truncate">{{ ingredient['name'] }}</h3>
+                    <span class="text-xs text-text-muted bg-background-light px-2 py-1 rounded-full uppercase tracking-wide">{{ ingredient['category'] or 'Uncategorized' }}</span>
+                </header>
+                <p class="text-sm text-text-muted">
+                    <span class="font-medium text-text-normal">Subcategory:</span>
+                    {{ ingredient['sub_category'] or 'None' }}
+                </p>
+            </div>
+            <div class="flex items-center justify-between gap-3 border-t border-border bg-background-dark px-4 py-3">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-logo transition"
+                    onclick="openEditModal(this)"
+                >
+                    <span class="text-base leading-none">✎</span>
+                    Edit
+                </button>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500 transition"
+                    onclick="deleteIngredient(this)"
+                >
+                    Delete
+                </button>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <p id="ingredients-empty" class="mt-6 hidden text-sm text-text-muted">No ingredients match your search.</p>
     {% else %}
-        <p>No ingredients in the master list yet.</p>
+    <p class="mt-6 text-text-muted">No ingredients in the master list yet. Add your first ingredient above.</p>
     {% endif %}
 
+    <!-- Add Ingredient Modal -->
+    <div id="add-ingredient-modal" class="modal-backdrop hidden">
+        <div class="modal-panel max-w-lg">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Add Ingredient</h2>
+                <button type="button" onclick="closeAddModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <form method="post" class="modal-body space-y-4" id="add-ingredient-form">
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Name</span>
+                    <input type="text" id="add-name" name="name" required class="modal-input" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Category</span>
+                    <select id="add-category" name="category" required class="modal-input" onchange="syncSubcategories(this, 'add-subcategory')">
+                        <option value="">Select category</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Subcategory (optional)</span>
+                    <select id="add-subcategory" name="sub_category" class="modal-input">
+                        <option value="">None</option>
+                    </select>
+                </label>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeAddModal()" class="modal-button-secondary">Cancel</button>
+                    <button type="submit" class="modal-button-primary">Save Ingredient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Edit Ingredient Modal -->
-    <div id="edit-ingredient-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditIngredientModal()">×</span>
-            <h2>Edit Ingredient</h2>
-            <form id="edit-ingredient-form">
-                <input type="hidden" id="edit-ingredient-id" name="id">
-                <label for="edit-ingredient-name">Name:</label>
-                <input type="text" id="edit-ingredient-name" name="name" required><br><br>
-                <label for="edit-ingredient-category">Category:</label>
-                <select name="category" id="edit-ingredient-category" required onchange="updateEditSubcategories()">
-                    <option value="" disabled>Select Category</option>
-                    {% for category in categories %}
-                        <option value="{{ category }}">{{ category }}</option>
-                    {% endfor %}
-                </select><br><br>
-                <label for="edit-ingredient-subcategory">Sub Category (Optional):</label>
-                <select name="sub_category" id="edit-ingredient-subcategory">
-                    <option value="">None</option>
-                </select><br><br>
-                <button type="button" onclick="saveEditIngredient()" style="background-color: #4CAF50; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
-                <button type="button" onclick="closeEditIngredientModal()" style="background-color: #ff4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+    <div id="edit-ingredient-modal" class="modal-backdrop hidden">
+        <div class="modal-panel max-w-lg">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Edit Ingredient</h2>
+                <button type="button" onclick="closeEditModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <form id="edit-ingredient-form" class="modal-body space-y-4">
+                <input type="hidden" id="edit-id" name="id" />
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Name</span>
+                    <input type="text" id="edit-name" name="name" required class="modal-input" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Category</span>
+                    <select id="edit-category" name="category" required class="modal-input" onchange="syncSubcategories(this, 'edit-subcategory')">
+                        <option value="" disabled>Select category</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Subcategory (optional)</span>
+                    <select id="edit-subcategory" name="sub_category" class="modal-input">
+                        <option value="">None</option>
+                    </select>
+                </label>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeEditModal()" class="modal-button-secondary">Cancel</button>
+                    <button type="button" onclick="saveEditIngredient()" class="modal-button-primary">Save Changes</button>
+                </div>
             </form>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle Delete buttons
-            const deleteButtons = document.querySelectorAll('.delete-ingredient');
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    if (confirm(`Are you sure you want to delete this ingredient?`)) {
-                        fetch(`/delete_possible_ingredient/${id}`, {
-                            method: 'DELETE'
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            alert(data.message);
-                            location.reload();
-                        })
-                        .catch(error => {
-                            console.error('Error deleting ingredient:', error);
-                            alert('Error deleting ingredient.');
-                        });
-                    }
-                });
+        const CATEGORY_DATA = {{ categories | tojson }};
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal-backdrop').forEach((modal) => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
             });
+        }
 
-            // Handle Edit buttons
-            const editButtons = document.querySelectorAll('.edit-ingredient');
-            editButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const row = this.closest('tr');
-                    const name = row.cells[2].textContent; // Name is in the third column (index 2)
-                    const category = row.cells[3].textContent; // Category is in the fourth column (index 3)
-                    const subCategory = row.cells[4].textContent || ''; // Sub Category is in the fifth column (index 4)
+        function openAddModal() {
+            const modal = document.getElementById('add-ingredient-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                document.getElementById('add-ingredient-form').reset();
+                syncSubcategories(document.getElementById('add-category'), 'add-subcategory');
+                document.getElementById('add-name').focus();
+            }
+        }
 
-                    // Populate the modal with current values
-                    document.getElementById('edit-ingredient-id').value = id;
-                    document.getElementById('edit-ingredient-name').value = name;
-                    document.getElementById('edit-ingredient-category').value = category;
-                    document.getElementById('edit-ingredient-subcategory').innerHTML = '<option value="">None</option>';
+        function closeAddModal() {
+            const modal = document.getElementById('add-ingredient-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
 
-                    // Fetch and populate subcategories for the selected category
-                    if (category) {
-                        fetch(`/subcategories/${encodeURIComponent(category)}`)
-                            .then(response => response.json())
-                            .then(subcategories => {
-                                const subcatSelect = document.getElementById('edit-ingredient-subcategory');
-                                subcategories.forEach(subcat => {
-                                    const option = document.createElement('option');
-                                    option.value = subcat;
-                                    option.textContent = subcat;
-                                    if (subcat === subCategory) {
-                                        option.selected = true;
-                                    }
-                                    subcatSelect.appendChild(option);
-                                });
-                            })
-                            .catch(error => {
-                                console.error('Error fetching subcategories:', error);
-                            });
-                    }
+        function openEditModal(button) {
+            const card = button.closest('.ingredient-card');
+            if (!card) {
+                return;
+            }
 
-                    // Show the modal
-                    document.getElementById('edit-ingredient-modal').style.display = 'block';
-                });
-            });
+            const modal = document.getElementById('edit-ingredient-modal');
+            if (!modal) {
+                return;
+            }
 
-            // Function to update subcategories based on selected category in Add form
-            window.updateSubcategories = function() {
-                const categorySelect = document.getElementById('category');
-                const subCategorySelect = document.getElementById('sub_category');
-                const category = categorySelect.value;
+            document.getElementById('edit-id').value = card.dataset.id || '';
+            document.getElementById('edit-name').value = card.dataset.name || '';
+            const categorySelect = document.getElementById('edit-category');
+            categorySelect.value = card.dataset.category || '';
+            syncSubcategories(categorySelect, 'edit-subcategory', card.dataset.subcategory || '');
 
-                // Clear existing options
-                subCategorySelect.innerHTML = '<option value="">None</option>';
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
 
-                if (category) {
-                    fetch(`/subcategories/${encodeURIComponent(category)}`)
-                        .then(response => response.json())
-                        .then(subcategories => {
-                            subcategories.forEach(subcat => {
-                                const option = document.createElement('option');
-                                option.value = subcat;
-                                option.textContent = subcat;
-                                subCategorySelect.appendChild(option);
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error fetching subcategories:', error);
-                        });
-                }
-            };
+        function closeEditModal() {
+            const modal = document.getElementById('edit-ingredient-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
 
-            // Function to update subcategories in Edit modal
-            window.updateEditSubcategories = function() {
-                const categorySelect = document.getElementById('edit-ingredient-category');
-                const subCategorySelect = document.getElementById('edit-ingredient-subcategory');
-                const category = categorySelect.value;
+        function syncSubcategories(selectEl, targetSelectId, selectedValue = '') {
+            const target = document.getElementById(targetSelectId);
+            if (!selectEl || !target) {
+                return;
+            }
 
-                // Clear existing options
-                subCategorySelect.innerHTML = '<option value="">None</option>';
+            target.innerHTML = '<option value=\"\">None</option>';
+            const category = selectEl.value;
+            if (!category) {
+                return;
+            }
 
-                if (category) {
-                    fetch(`/subcategories/${encodeURIComponent(category)}`)
-                        .then(response => response.json())
-                        .then(subcategories => {
-                            subcategories.forEach(subcat => {
-                                const option = document.createElement('option');
-                                option.value = subcat;
-                                option.textContent = subcat;
-                                subCategorySelect.appendChild(option);
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error fetching subcategories:', error);
-                        });
-                }
-            };
-
-            // Function to save edited ingredient
-            window.saveEditIngredient = function() {
-                const form = document.getElementById('edit-ingredient-form');
-                const id = document.getElementById('edit-ingredient-id').value;
-                const formData = new FormData(form);
-
-                fetch(`/update_possible_ingredient/${id}`, {
-                    method: 'POST',
-                    body: formData
+            fetch(`/subcategories/${encodeURIComponent(category)}`)
+                .then((response) => response.json())
+                .then((subcategories) => {
+                    subcategories.forEach((sub) => {
+                        const option = document.createElement('option');
+                        option.value = sub;
+                        option.textContent = sub;
+                        if (selectedValue && selectedValue === sub) {
+                            option.selected = true;
+                        }
+                        target.appendChild(option);
+                    });
                 })
-                .then(response => {
+                .catch((error) => {
+                    console.error('Unable to load subcategories:', error);
+                });
+        }
+
+        function notify(message, isError = false) {
+            if (typeof showToast === "function") {
+                showToast(message, isError ? 3500 : 2500);
+            } else if (isError) {
+                window.alert(message);
+            } else {
+                console.log(message);
+            }
+        }
+
+        function removeCardById(id) {
+            const card = document.querySelector(`.ingredient-card[data-id="${id}"]`);
+            if (card && card.parentElement) {
+                card.parentElement.removeChild(card);
+            }
+
+            const remainingCards = document.querySelectorAll('.ingredient-card');
+            const emptyState = document.getElementById('ingredients-empty');
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', remainingCards.length !== 0);
+            }
+            filterIngredientCards();
+        }
+
+        function updateCardFromForm(data) {
+            const card = document.querySelector(`.ingredient-card[data-id=\"${data.id}\"]`);
+            if (!card) {
+                return;
+            }
+            card.dataset.name = data.name;
+            card.dataset.category = data.category;
+            card.dataset.subcategory = data.sub_category || '';
+            card.querySelector('h3').textContent = data.name;
+            card.querySelector('span').textContent = data.category || 'Uncategorized';
+            const subText = card.querySelector('p');
+            if (subText) {
+                subText.innerHTML = `<span class=\"font-medium text-text-normal\">Subcategory:</span> ${data.sub_category || 'None'}`;
+            }
+        }
+
+        function deleteIngredient(button) {
+            const card = button.closest(".ingredient-card");
+            if (!card) {
+                return;
+            }
+            const id = card.dataset.id;
+            if (!id) {
+                return;
+            }
+
+            fetch(`/delete_possible_ingredient/${id}`, { method: "DELETE" })
+                .then((response) => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
+                        throw new Error(`Request failed with status ${response.status}`);
+                    }
+                    removeCardById(id);
+                    filterIngredientCards();
+                    notify(`${card.dataset.name || "Ingredient"} removed from master list.`);
+                })
+                .catch((error) => {
+                    console.error("Unable to delete ingredient:", error);
+                    notify("Unable to delete ingredient. Please try again.", true);
+                });
+        }
+
+        function saveEditIngredient() {
+            const form = document.getElementById('edit-ingredient-form');
+            if (!form) {
+                return;
+            }
+            const id = form.querySelector('#edit-id').value;
+            if (!id) {
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            fetch(`/update_possible_ingredient/${id}`, {
+                method: 'POST',
+                body: formData,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        return response.json().then((payload) => {
+                            throw new Error(payload.message || 'Unable to update ingredient.');
+                        });
                     }
                     return response.json();
                 })
                 .then(() => {
-                    closeEditIngredientModal();
-                    location.reload();
+                    updateCardFromForm({
+                        id,
+                        name: formData.get('name') || '',
+                        category: formData.get('category') || '',
+                        sub_category: formData.get('sub_category') || '',
+                    });
+                    closeEditModal();
+                    filterIngredientCards();
+                    notify('Ingredient updated.');
                 })
-                .catch(error => {
-                    console.error('Error updating ingredient:', error);
-                    alert('Error updating ingredient.');
+                .catch((error) => {
+                    console.error('Unable to update ingredient:', error);
+                    notify(error.message || 'Unable to update ingredient. Please try again.', true);
                 });
-            };
+        }
 
-            // Function to close the Edit modal
-            window.closeEditIngredientModal = function() {
-                document.getElementById('edit-ingredient-modal').style.display = 'none';
-                document.getElementById('edit-ingredient-form').reset();
-            };
+        function filterIngredientCards() {
+            const filterValue = (document.getElementById('ingredient-filter')?.value || '').trim().toLowerCase();
+            const cards = document.querySelectorAll('.ingredient-card');
+            let visibleCount = 0;
 
-            // Sorting functionality
-            let sortDirection = {
-                'name': 1,
-                'category': 1,
-                'sub_category': 1
-            };
-
-            window.sortTable = function(column) {
-                const tbody = document.getElementById('ingredients-list');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                const direction = sortDirection[column];
-
-                // Sort the rows
-                rows.sort((a, b) => {
-                    let aValue = a.cells[getColumnIndex(column)].textContent.toLowerCase();
-                    let bValue = b.cells[getColumnIndex(column)].textContent.toLowerCase();
-
-                    // Handle empty values (place them at the end)
-                    if (aValue === '' && bValue !== '') return 1;
-                    if (bValue === '' && aValue !== '') return -1;
-                    if (aValue === bValue) return 0;
-
-                    return direction * (aValue > bValue ? 1 : -1);
-                });
-
-                // Toggle sort direction
-                sortDirection[column] = -direction;
-
-                // Update sort indicators
-                updateSortIndicators(column, direction);
-
-                // Clear and re-append sorted rows
-                while (tbody.firstChild) {
-                    tbody.removeChild(tbody.firstChild);
+            cards.forEach((card) => {
+                const name = (card.dataset.name || '').toLowerCase();
+                const category = (card.dataset.category || '').toLowerCase();
+                const subcategory = (card.dataset.subcategory || '').toLowerCase();
+                const shouldShow =
+                    !filterValue ||
+                    name.includes(filterValue) ||
+                    category.includes(filterValue) ||
+                    subcategory.includes(filterValue);
+                card.classList.toggle('hidden', !shouldShow);
+                if (shouldShow) {
+                    visibleCount += 1;
                 }
-                rows.forEach(row => tbody.appendChild(row));
+            });
 
-                // Re-apply filters after sorting
-                filterTable();
-            };
-
-            function getColumnIndex(column) {
-                const headers = ['edit', 'delete', 'name', 'category', 'sub_category'];
-                return headers.indexOf(column);
+            const emptyState = document.getElementById('ingredients-empty');
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', visibleCount !== 0);
             }
+        }
 
-            function updateSortIndicators(column, direction) {
-                const indicators = {
-                    'name': document.getElementById('sort-name'),
-                    'category': document.getElementById('sort-category'),
-                    'sub_category': document.getElementById('sort-sub_category')
-                };
-
-                // Reset all indicators
-                for (let key in indicators) {
-                    indicators[key].textContent = '↕';
-                }
-
-                // Set the indicator for the current column
-                indicators[column].textContent = direction === 1 ? '↑' : '↓';
+        function resetIngredientFilter() {
+            const filterInput = document.getElementById('ingredient-filter');
+            if (filterInput) {
+                filterInput.value = '';
             }
+            filterIngredientCards();
+        }
 
-            // Filtering functionality
-            window.filterTable = function() {
-                const filterValue = document.getElementById('filter-all').value.toLowerCase();
-                const tbody = document.getElementById('ingredients-list');
-                const rows = tbody.querySelectorAll('tr');
-
-                rows.forEach(row => {
-                    const name = row.cells[2].textContent.toLowerCase();       // third column
-                    const category = row.cells[3].textContent.toLowerCase();   // fourth column
-                    const subCategory = row.cells[4].textContent.toLowerCase();// fifth column
-
-                    const matches = name.includes(filterValue) ||
-                                    category.includes(filterValue) ||
-                                    subCategory.includes(filterValue);
-
-                    row.style.display = matches ? '' : 'none';
-                });
-            };
+        document.addEventListener('DOMContentLoaded', () => {
+            filterIngredientCards();
         });
-    </script>
 
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 50%;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: black;
-        }
-    </style>
+        window.openAddModal = openAddModal;
+        window.closeAddModal = closeAddModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.deleteIngredient = deleteIngredient;
+        window.saveEditIngredient = saveEditIngredient;
+        window.filterIngredientCards = filterIngredientCards;
+        window.resetIngredientFilter = resetIngredientFilter;
+        window.syncSubcategories = syncSubcategories;
+    </script>
 {% endblock %}

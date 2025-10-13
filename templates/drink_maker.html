@@ -1,136 +1,259 @@
 {% extends "base.html" %}
 {% block title %}Drink Maker{% endblock %}
 {% block content %}
-    <h1>Drinks You Can Make</h1>
-    <div style="display: flex;">
-        <!-- Drink Table -->
-        <div style="flex: 1;">
-            <table id="drink-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th data-sort="asc" onclick="sortTable('drink-table', 0)">Drink Name<span class="sort-arrow"></span></th>
-                        <th data-sort="desc" onclick="sortTable('drink-table', 1)">Base Spirit<span class="sort-arrow"></span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for drink in can_make %}
-                        <tr data-drink="{{ drink.drink }}" class="recipe-link">
-                            <td>{{ drink.drink }}</td>
-                            <td>{{ drink.base_spirit }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <p>Explore more options:</p>
-            <ul>
-                <li><a href="{{ url_for('drink_maker.missing_one') }}">Sooo close...</a></li>
-                <li><a href="{{ url_for('drink_maker.replacements') }}">Replacements</a></li>
-            </ul>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 class="text-3xl font-semibold text-text-normal">Drinks You Can Make</h1>
+        <p class="text-sm text-text-muted">Matched from your bar inventory.</p>
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-4 items-end bg-background-mid/40 border border-border rounded-2xl p-4">
+        <div class="flex flex-col gap-1 w-full sm:max-w-xs">
+            <label for="drink-filter" class="text-xs uppercase tracking-wide text-text-muted">Search Drinks</label>
+            <input
+                type="text"
+                id="drink-filter"
+                placeholder="Search by name, base spirit, category..."
+                oninput="filterDrinkCards()"
+                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
+            >
         </div>
-        <!-- Sidebar for Details -->
-        <div style="flex: 1; padding: 10px; border-left: 1px solid #ccc;">
-            <h3>Recipe Details</h3>
-            <div id="recipe-details"></div>
-        </div>
+        <button
+            type="button"
+            onclick="resetDrinkFilters()"
+            class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition"
+        >
+            Clear Search
+        </button>
+    </div>
+
+    {% if can_make %}
+    <div id="drink-maker-container" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {% for drink in can_make %}
+        {% set spirit = (drink.base_spirit or 'Unknown') %}
+        <article
+            class="drink-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
+            data-drink="{{ drink.drink|escape }}"
+            data-base-spirit="{{ spirit|escape }}"
+            data-base-category="{{ drink.base_spirit_category|default('', true)|escape }}"
+            data-spirit-summary="{{ drink.spirit_summary|default('', true)|escape }}"
+        >
+            <button
+                type="button"
+                aria-expanded="false"
+                class="drink-card-toggle w-full text-left p-4 flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-logo"
+            >
+                <header class="flex justify-between items-start gap-3">
+                    <h3 class="text-lg font-semibold text-text-normal truncate">{{ drink.drink }}</h3>
+                    <span class="text-xs text-text-muted bg-background-light px-2 py-1 rounded-full uppercase tracking-wide">{{ spirit }}</span>
+                </header>
+                <p class="text-xs uppercase tracking-wide text-text-muted">Tap to load recipe details</p>
+            </button>
+            <div class="drink-card-details hidden border-t border-border bg-background-dark p-4 text-sm text-text-normal">
+                <p class="text-text-muted">Select to load details.</p>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <p id="drinks-empty" class="mt-6 hidden text-sm text-text-muted">No drinks match your filters.</p>
+    {% else %}
+    <p class="mt-6 text-text-muted">Add more items to your bar to unlock recipes you can make right now.</p>
+    {% endif %}
+
+    <div class="mt-10 flex flex-wrap gap-3">
+        <a href="{{ url_for('drink_maker.missing_one') }}" class="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition">
+            Sooo Close...
+        </a>
+        <a href="{{ url_for('drink_maker.replacements') }}" class="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition">
+            Replacements
+        </a>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const recipeLinks = document.querySelectorAll('.recipe-link');
-            const recipeDetailsDiv = document.getElementById('recipe-details');
+        (function() {
+            let activeDrinkCard = null;
 
-            recipeLinks.forEach(link => {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const drink = this.getAttribute('data-drink');
-                    fetch(`/recipe/${drink}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            let detailsHtml = `<h4>${data.name}</h4>`;
-                            for (const [key, value] of Object.entries(data)) {
-                                if (key !== 'name' && key !== 'ingredients') {
-                                    const formattedKey = key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-                                    const displayValue = value !== null && value !== '' ? value : 'N/A';
-                                    detailsHtml += `<p><strong>${formattedKey}:</strong> ${displayValue}</p>`;
-                                }
-                            }
-                            detailsHtml += `<p><strong>Ingredients:</strong></p><ul>`;
-                            data.ingredients.forEach(ing => {
-                                detailsHtml += `<li>${ing.quantity || ''} ${ing.unit || ''} ${ing.ingredient}</li>`;
-                            });
-                            detailsHtml += `</ul>`;
-                            recipeDetailsDiv.innerHTML = detailsHtml;
-                        })
-                        .catch(error => {
-                            console.error('Error fetching recipe:', error);
-                            recipeDetailsDiv.innerHTML = '<p>Error loading recipe details.</p>';
-                        });
+            function collapseCard(card) {
+                if (!card) {
+                    return;
+                }
+                const details = card.querySelector('.drink-card-details');
+                if (details) {
+                    details.classList.add('hidden');
+                }
+                const toggle = card.querySelector('.drink-card-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+                card.classList.remove('ring-2', 'ring-logo');
+                if (activeDrinkCard === card) {
+                    activeDrinkCard = null;
+                }
+            }
+
+            function renderDrinkDetails(card, data) {
+                const details = card.querySelector('.drink-card-details');
+                if (!details) {
+                    return;
+                }
+
+                const ingredientsMarkup = (data.ingredients || [])
+                    .map((ing) => {
+                        const parts = [ing.quantity, ing.unit, ing.ingredient]
+                            .filter(Boolean)
+                            .join(' ')
+                            .trim();
+                        return `<li class="flex items-start text-sm text-text-normal">${parts || 'Ingredient'}</li>`;
+                    })
+                    .join('');
+
+                const ingredientsHtml = ingredientsMarkup || '<li class="text-sm text-text-muted">No ingredients listed.</li>';
+
+                const fields = [
+                    { label: 'Base Spirit', value: data.base_spirit || 'Unknown' },
+                    { label: 'Glass', value: data.glass || 'None' },
+                    { label: 'Method', value: data.method || 'None' },
+                    { label: 'Garnish', value: data.garnish || 'None' },
+                    { label: 'Ice', value: data.ice || data.Ice || 'None' },
+                ];
+
+                details.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Ingredients</p>
+                            <ul class="space-y-1">${ingredientsHtml}</ul>
+                        </div>
+                        <dl class="grid grid-cols-2 gap-3 text-xs uppercase tracking-wide text-text-muted">
+                            ${fields
+                                .map(
+                                    (field) => `
+                                        <div>
+                                            <dt>${field.label}</dt>
+                                            <dd class="text-sm text-text-normal">${field.value}</dd>
+                                        </div>
+                                    `
+                                )
+                                .join('')}
+                        </dl>
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Notes</p>
+                            <p class="text-sm text-text-normal whitespace-pre-wrap">${data.notes || 'None'}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function loadDrinkDetails(card) {
+                const drink = card.dataset.drink;
+                if (!drink) {
+                    return;
+                }
+                const details = card.querySelector('.drink-card-details');
+                if (details) {
+                    details.innerHTML = '<p class="text-sm text-text-muted">Loading details...</p>';
+                }
+
+                fetch(`/recipe/${encodeURIComponent(drink)}`)
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`Request failed with status ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        renderDrinkDetails(card, data);
+                    })
+                    .catch((error) => {
+                        console.error('Error fetching recipe details:', error);
+                        if (details) {
+                            details.innerHTML = '<p class="text-sm text-text-muted">Unable to load recipe details.</p>';
+                        }
+                    });
+            }
+
+            function toggleDrinkCard(card) {
+                if (!card) {
+                    return;
+                }
+                if (activeDrinkCard === card) {
+                    collapseCard(card);
+                    return;
+                }
+                if (activeDrinkCard) {
+                    collapseCard(activeDrinkCard);
+                }
+                activeDrinkCard = card;
+                card.classList.add('ring-2', 'ring-logo');
+                const toggle = card.querySelector('.drink-card-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+                const details = card.querySelector('.drink-card-details');
+                if (details) {
+                    details.classList.remove('hidden');
+                }
+                if (!card.dataset.loaded) {
+                    loadDrinkDetails(card);
+                    card.dataset.loaded = 'true';
+                }
+            }
+
+            function initializeCards() {
+                const toggles = document.querySelectorAll('.drink-card-toggle');
+                toggles.forEach((toggle) => {
+                    toggle.setAttribute('aria-expanded', 'false');
+                    toggle.addEventListener('click', () => {
+                        const card = toggle.closest('.drink-card');
+                        toggleDrinkCard(card);
+                    });
                 });
-            });
+            }
 
-            // Sorting function with secondary sort
-            window.sortTable = function(tableId, colIndex) {
-                const table = document.getElementById(tableId);
-                const tbody = table.getElementsByTagName('tbody')[0];
-                const rows = Array.from(tbody.getElementsByTagName('tr'));
-                const header = table.getElementsByTagName('th')[colIndex];
-                let currentDirection = header.getAttribute('data-sort') || 'asc';
-                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            window.filterDrinkCards = function() {
+                const filterValue = (document.getElementById('drink-filter')?.value || '').trim().toLowerCase();
+                const cards = document.querySelectorAll('.drink-card');
+                let visible = 0;
 
-                // Set the new direction and update the arrow
-                header.setAttribute('data-sort', newDirection);
-                const arrows = table.querySelectorAll('.sort-arrow');
-                arrows.forEach(arrow => arrow.textContent = '');
-                header.querySelector('.sort-arrow').textContent = newDirection === 'asc' ? '▲' : '▼';
+                cards.forEach((card) => {
+                    const drinkName = (card.dataset.drink || '').toLowerCase();
+                    const baseSpirit = (card.dataset.baseSpirit || '').toLowerCase();
+                    const baseCategory = (card.dataset.baseCategory || '').toLowerCase();
+                    const spiritSummary = (card.dataset.spiritSummary || '').toLowerCase();
 
-                // Perform the sort with secondary sort on Drink Name (index 0) when sorting by Base Spirit (index 1)
-                rows.sort((rowA, rowB) => {
-                    const cellA1 = rowA.cells[colIndex].textContent.trim().toLowerCase();
-                    const cellB1 = rowB.cells[colIndex].textContent.trim().toLowerCase();
-                    const cellA2 = rowA.cells[0].textContent.trim().toLowerCase(); // Secondary sort by Drink Name
-                    const cellB2 = rowB.cells[0].textContent.trim().toLowerCase();
+                    const trimmedFilter = filterValue.trim();
+                    const shouldShow =
+                        !trimmedFilter ||
+                        drinkName.includes(trimmedFilter) ||
+                        baseSpirit.includes(trimmedFilter) ||
+                        baseCategory.includes(trimmedFilter) ||
+                        spiritSummary.includes(trimmedFilter);
 
-                    // Primary sort by the clicked column
-                    let comparison = newDirection === 'asc' ? cellA1.localeCompare(cellB1) : cellB1.localeCompare(cellA1);
-                    // If primary sort is equal, use secondary sort (always ascending for Drink Name)
-                    if (comparison === 0 && colIndex === 1) {
-                        comparison = cellA2.localeCompare(cellB2);
+                    card.classList.toggle('hidden', !shouldShow);
+                    if (!shouldShow && activeDrinkCard === card) {
+                        collapseCard(card);
                     }
-                    return comparison;
+                    if (shouldShow) {
+                        visible += 1;
+                    }
                 });
 
-                rows.forEach(row => tbody.appendChild(row));
+                const emptyState = document.getElementById('drinks-empty');
+                if (emptyState) {
+                    emptyState.classList.toggle('hidden', visible !== 0);
+                }
             };
 
-            // Default sort by Base Spirit (column index 1) in descending order on page load
-            const baseSpiritHeader = document.getElementById('drink-table').getElementsByTagName('th')[1];
-            baseSpiritHeader.setAttribute('data-sort', 'desc'); // Ensure starting with descending
-            sortTable('drink-table', 1); // Sort by Base Spirit on load
-        });
-    </script>
+            window.resetDrinkFilters = function() {
+                const filterInput = document.getElementById('drink-filter');
+                if (filterInput) {
+                    filterInput.value = '';
+                }
+                filterDrinkCards();
+            };
 
-    <style>
-        table {
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-            cursor: pointer;
-        }
-        th:hover {
-            background-color: #ddd;
-        }
-        td:hover {
-            background-color: #f09898;
-        }
-        .sort-arrow {
-            margin-left: 5px;
-        }
-    </style>
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeCards();
+                filterDrinkCards();
+            });
+        })();
+    </script>
 {% endblock %}

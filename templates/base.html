@@ -7,89 +7,34 @@
     <!-- Tailwind -->
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/output.css') }}">
 </head>
-<style>
-    .toast {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background-color: #333;
-        color: #fff;
-        padding: 12px 20px;
-        border-radius: 6px;
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-        z-index: 9999;
-        }
-    .toast.show {
-        opacity: 1;
-        }
-</style>
-
-<div id="toast" class="toast"></div>
-
-<script>
-function showToast(message, duration = 3000) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, duration);
-}
-</script>
-
 <body class="bg-background-dark min-h-screen max-w-[1600px] mx-auto text-text-normal relative text-sm sm:text-lg md:text-xl lg:text-2xl flex flex-col">
-    <!-- Mobile NavBar -->
-    <nav class="sm:hidden flex justify-between items-center px-4 py-2 bg-background-mid border-b border-border shadow-md sticky top-0 z-50">
-    
-        <!-- Left: Hamburger + Logo -->
-        <div class="flex items-center gap-2">
-            <!-- Logo -->
-            <a href="{{ url_for('home') }}">
-                <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-8 w-auto">
+    <div id="toast" class="toast"></div>
+    <!-- Mobile Bottom Nav -->
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-background-mid border-t border-border-muted z-50">
+        <div class="flex justify-around items-center py-2 text-xs text-text-muted">
+            <a href="{{ url_for('home') }}" class="flex flex-col items-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+                <span>Home</span>
             </a>
-
-            <!-- Hamburger -->
-            <button id="menu-toggle" class="text-text-normal focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Right: Login/Logout -->
-        <div>
-            {% if session.logged_in %}
-                <a href="{{ url_for('logout') }}" class="text-sm bg-primary text-white rounded-full px-3 py-1.5 shadow hover:bg-danger">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="text-sm bg-primary text-white rounded-full px-3 py-1.5 shadow hover:bg-accent">Login</a>
-            {% endif %}
+            <a href="{{ url_for('bar.bar') }}" class="flex flex-col items-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 0v4m0 8v4m4-8H8"/></svg>
+                <span>Bar</span>
+            </a>
+            <a href="{{ url_for('recipes.recipes') }}" class="flex flex-col items-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 2v4"/></svg>
+                <span>Recipes</span>
+            </a>
+            <a href="{{ url_for('drink_maker.drink_maker') }}" class="flex flex-col items-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M10 14h4"/></svg>
+                <span>Mix</span>
+            </a>
+            <a href="{{ url_for('manage_lists') }}" class="flex flex-col items-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
+                <span>Gear</span>
+            </a>
         </div>
     </nav>
 
-    <!-- Mobile Side Drawer -->
-    <div id="mobile-drawer" class="sm:hidden fixed z-50 top-0 left-0 h-full w-64 bg-background-mid shadow-lg transform -translate-x-full transition-transform duration-300 p-6 border-r border-border">
-        <div class="flex items-center gap-3 mb-6">
-            <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-8 w-auto">
-                <span class="text-lg font-semibold text-text-normal">Menu</span>
-        </div>
-        
-        <nav class="flex flex-col gap-4 text-sm text-text-normal font-medium">
-            <a href="{{ url_for('bar.bar') }}" class="hover:bg-background-light px-2 py-1 rounded">Bar Contents</a>
-            <a href="{{ url_for('recipes.recipes') }}" class="hover:bg-background-light px-2 py-1 rounded">Recipe Collection</a>
-            <a href="{{ url_for('drink_maker.drink_maker') }}" class="hover:bg-background-light px-2 py-1 rounded">Drink Maker</a>
-            <a href="{{ url_for('manage_lists') }}" class="hover:bg-background-light px-2 py-1 rounded">Manage Lists</a>
-            <a href="{{ url_for('possible_ingredients') }}" class="hover:bg-background-light px-2 py-1 rounded">Possible Ingredients</a>
-        </nav>
-    </div>
-
-    <!-- Overlay for drawer -->
-    <div id="drawer-overlay"
-        class="sm:hidden fixed inset-0 bg-black bg-opacity-40 z-30 hidden">
-    </div>
-    
     <!-- Desktop Nav (hidden on mobile) -->
     <div class="hidden bg-background-dark sm:flex justify-between items-start gap-4 px-4 sticky top-0 z-50 pb-6 pt-4">
         <!-- Left nav card -->
@@ -128,32 +73,13 @@ function showToast(message, duration = 3000) {
     <footer >
 
     </footer>
+
+    <!-- Viewport debug -->
     <div class="fixed bottom-0 right-0 bg-black text-white text-xs px-2 py-1 z-50">
         <span id="width"></span>px wide × <span id="height"></span>px tall
     </div>
 
-    <script>
-        const menuToggle = document.getElementById('menu-toggle');
-        const drawer = document.getElementById('mobile-drawer');
-        const overlay = document.getElementById('drawer-overlay');
-
-        menuToggle.addEventListener('click', () => {
-            drawer.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        });
-
-        overlay.addEventListener('click', () => {
-            drawer.classList.add('-translate-x-full');
-            overlay.classList.add('hidden');
-        });
-
-        function updateViewportSize() {
-            document.getElementById('width').textContent = window.innerWidth;
-            document.getElementById('height').textContent = window.innerHeight;
-        }
-
-        window.addEventListener('resize', updateViewportSize);
-        window.addEventListener('DOMContentLoaded', updateViewportSize);
-    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

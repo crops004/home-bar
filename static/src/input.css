@@ -2,7 +2,14 @@
 
 /* Optional: only if you use Tailwind plugins */
 @layer components {
-  /* You can add shared custom components here if needed */
+  /* Toast notification */
+  .toast {
+    @apply fixed bottom-8 right-8 bg-background-mid text-text-normal px-5 py-3 rounded-md shadow-lg opacity-0 transition-opacity duration-500 z-[9999];
+  }
+
+  .toast.show {
+    @apply opacity-100;
+  }
 }
 
 @layer utilities {
@@ -44,4 +51,52 @@
   --color-light-info: oklch(0.5 0.05 260);
   --color-logo: hsl(40.82, 65.99%, 71.18%);
   --color-logo-dark: hsl(40.82, 65.99%, 36%);
+}
+
+@layer components {
+  .modal-backdrop {
+    @apply fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4;
+  }
+  .modal-panel {
+    @apply w-full max-w-3xl rounded-3xl border border-border bg-background-dark text-text-normal shadow-2xl overflow-hidden;
+  }
+  .modal-header {
+    @apply flex items-center justify-between border-b border-border bg-background-mid px-6 py-4;
+  }
+  .modal-body {
+    @apply max-h-[75vh] overflow-y-auto bg-background-dark px-6 py-4 space-y-4;
+  }
+  .modal-footer {
+    @apply border-t border-border bg-background-mid px-6 py-4 flex justify-end gap-3;
+  }
+  .modal-input {
+    @apply rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo;
+  }
+  .modal-label {
+    @apply text-xs uppercase tracking-wide text-text-muted;
+  }
+  .modal-button-primary {
+    @apply rounded-full bg-logo px-4 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition;
+  }
+  .modal-button-secondary {
+    @apply rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition;
+  }
+  .modal-button-danger {
+    @apply rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-light-text-normal hover:bg-red-500 transition;
+  }
+  .ingredient-dropdown {
+    @apply absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-border bg-background-dark text-sm text-text-normal shadow-2xl max-h-60 overflow-y-auto;
+  }
+  .ingredient-dropdown--above {
+    @apply top-auto bottom-full mt-0 mb-2;
+  }
+  .ingredient-option {
+    @apply w-full text-left px-3 py-2 text-sm text-text-normal transition hover:bg-background-mid focus:bg-background-mid focus:outline-none;
+  }
+  .ingredient-option-add {
+    @apply text-logo hover:bg-logo/20 focus:bg-logo/20;
+  }
+  .ingredient-option-empty {
+    @apply px-3 py-2 text-sm text-text-muted;
+  }
 }

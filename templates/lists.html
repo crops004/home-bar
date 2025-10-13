@@ -1,32 +1,154 @@
 {% extends "base.html" %}
 {% block title %}Manage Lists{% endblock %}
 {% block content %}
-    <h1>Manage Lists</h1>
-    <form method="post">
-        <h3>Categories</h3>
-        <textarea name="categories" rows="3" style="width: 100%;">{{ lists.categories | join(', ') }}</textarea>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 class="text-3xl font-semibold text-text-normal">Manage Lists</h1>
+        <p class="text-sm text-text-muted max-w-xl">Review and adjust the shared lists that power dropdowns across the site. Toggle a section to make edits, then save all changes at once.</p>
+    </div>
 
-        <h3>Subcategories</h3>
-        {% for category in lists.categories %}
-            <label>{{ category }} Subcategories:</label><br>
-            <textarea name="subcategories_{{ category }}" rows="2" style="width: 100%;">{{ lists.subcategories[category] | join(', ') if lists.subcategories[category] else '' }}</textarea><br>
-        {% endfor %}
+    <form id="lists-form" method="post" class="mt-6 space-y-6">
+        {% macro list_section(title, name, value, description='') %}
+            <section class="rounded-2xl border border-border bg-background-mid shadow-lg overflow-hidden">
+                <header class="flex items-start justify-between gap-3 border-b border-border bg-background-dark px-4 py-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-text-normal">{{ title }}</h2>
+                        {% if description %}
+                            <p class="text-sm text-text-muted">{{ description }}</p>
+                        {% endif %}
+                    </div>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition edit-toggle"
+                        data-target="{{ name }}"
+                    >
+                        <span class="text-base leading-none">✎</span>
+                        Edit
+                    </button>
+                </header>
+                <div class="px-4 py-4 bg-background-mid">
+                    <textarea
+                        id="{{ name }}"
+                        name="{{ name }}"
+                        class="list-input modal-input w-full min-h-32"
+                        data-initial="{{ value }}"
+                        readonly
+                    >{{ value }}</textarea>
+                    <p class="mt-2 text-xs text-text-muted">Comma-separated values (e.g. value1, value2, value3)</p>
+                </div>
+            </section>
+        {% endmacro %}
 
-        <h3>Glass Types</h3>
-        <textarea name="glass_types" rows="3" style="width: 100%;">{{ lists.glass_types | join(', ') }}</textarea>
+        {{ list_section(
+            "Categories",
+            "categories",
+            lists.categories | join(', '),
+            "Top-level ingredient groupings used throughout the app."
+        ) }}
 
-        <h3>Methods</h3>
-        <textarea name="methods" rows="3" style="width: 100%;">{{ lists.methods | join(', ') }}</textarea>
+        <section class="rounded-2xl border border-border bg-background-mid shadow-lg overflow-hidden">
+            <header class="flex items-start justify-between gap-3 border-b border-border bg-background-dark px-4 py-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-text-normal">Subcategories</h2>
+                    <p class="text-sm text-text-muted">Fine-grained ingredient types grouped under each category.</p>
+                </div>
+            </header>
+            <div class="divide-y divide-border">
+                {% for category in lists.categories %}
+                {% set value = lists.subcategories[category] | join(', ') if lists.subcategories[category] else '' %}
+                <div class="px-4 py-4 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">{{ category }}</h3>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition edit-toggle"
+                            data-target="subcategories_{{ category }}"
+                        >
+                            <span class="text-base leading-none">✎</span>
+                            Edit
+                        </button>
+                    </div>
+                    <textarea
+                        id="subcategories_{{ category }}"
+                        name="subcategories_{{ category }}"
+                        class="list-input modal-input w-full min-h-24"
+                        data-initial="{{ value }}"
+                        readonly
+                    >{{ value }}</textarea>
+                    <p class="text-xs text-text-muted">Comma-separated list of subcategories for {{ category }}.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
 
-        <h3>Ice Options</h3>
-        <textarea name="ice_options" rows="3" style="width: 100%;">{{ lists.ice_options | join(', ') }}</textarea>
+        {{ list_section(
+            "Glass Types",
+            "glass_types",
+            lists.glass_types | join(', '),
+            "Used for serving suggestions in recipes."
+        ) }}
 
-        <h3>Units</h3>
-        <textarea name="units" rows="3" style="width: 100%;">{{ lists.units | join(', ') }}</textarea>
+        {{ list_section(
+            "Methods",
+            "methods",
+            lists.methods | join(', '),
+            "Available preparation methods."
+        ) }}
 
-        <div style="margin-top: 20px;">
-            <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
-            <a href="{{ url_for('recipes.recipes') }}" style="margin-left: 10px; padding: 10px 20px; background-color: #ccc; color: black; text-decoration: none; border-radius: 4px;">Cancel</a>
+        {{ list_section(
+            "Ice Options",
+            "ice_options",
+            lists.ice_options | join(', '),
+            "Ice styles you can associate with recipes."
+        ) }}
+
+        {{ list_section(
+            "Units",
+            "units",
+            lists.units | join(', '),
+            "Units of measure for ingredients."
+        ) }}
+
+        <div class="sticky bottom-4 z-10 flex flex-wrap gap-3 justify-end rounded-2xl border border-border bg-background-dark px-4 py-3 shadow-lg">
+            <a href="{{ url_for('recipes.recipes') }}" class="modal-button-secondary">Cancel</a>
+            <button type="submit" class="modal-button-primary">Save All Changes</button>
         </div>
     </form>
+
+    <script>
+        function toggleEditable(button) {
+            const targetId = button.dataset.target;
+            if (!targetId) {
+                return;
+            }
+            const input = document.getElementById(targetId);
+            if (!input) {
+                return;
+            }
+            const isReadOnly = input.hasAttribute("readonly");
+            if (isReadOnly) {
+                input.removeAttribute("readonly");
+                input.focus();
+                input.selectionStart = input.value.length;
+                button.classList.add("bg-background-light", "text-text-normal");
+            } else {
+                input.setAttribute("readonly", "readonly");
+                button.classList.remove("bg-background-light", "text-text-normal");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".edit-toggle").forEach((button) => {
+                button.addEventListener("click", () => toggleEditable(button));
+            });
+
+            // Prevent accidental submit on Enter inside textarea.
+            document.querySelectorAll(".list-input").forEach((textarea) => {
+                textarea.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" && event.ctrlKey) {
+                        return;
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}

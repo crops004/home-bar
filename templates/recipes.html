@@ -1,237 +1,331 @@
 {% extends "base.html" %}
 {% block title %}Recipe Collection{% endblock %}
 {% block content %}
-    <h1>Recipe Collection</h1>
-
-    <!-- Button to open the Add Recipe modal -->
-    <button onclick="openAddModal()" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Add New Recipe</button>
-
-    <!-- Filter Row for Table -->
-    <div style="margin: 20px 0;">
-        <h2>Filter Recipes</h2>
-        <input type="text" id="filter-name" placeholder="Filter Drink Name..." onkeyup="filterTable()" style="margin-right: 10px; width: 200px;">
-        <input type="text" id="filter-spirit" placeholder="Filter Base Spirit..." onkeyup="filterTable()" style="width: 200px;">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 class="text-3xl font-semibold text-text-normal">Recipe Collection</h1>
+        <button
+            type="button"
+            onclick="openAddModal()"
+            class="inline-flex items-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+        >
+            <span class="text-xl leading-none">+</span>
+            Add New Recipe
+        </button>
     </div>
 
-    <!-- Recipe Table on Left -->
+    <div class="mt-6 flex flex-wrap gap-4 items-end bg-background-mid/40 border border-border rounded-2xl p-4">
+        <div class="flex flex-col gap-1">
+            <label for="filter-name" class="text-xs uppercase tracking-wide text-text-muted">Search Name</label>
+            <input
+                type="text"
+                id="filter-name"
+                oninput="filterCards()"
+                placeholder="e.g. Negroni"
+                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
+            >
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="filter-spirit" class="text-xs uppercase tracking-wide text-text-muted">Base Spirit</label>
+            <input
+                type="text"
+                id="filter-spirit"
+                oninput="filterCards()"
+                placeholder="e.g. Gin"
+                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
+            >
+        </div>
+        <button
+            type="button"
+            onclick="resetRecipeFilters()"
+            class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition"
+        >
+            Clear Filters
+        </button>
+    </div>
+
+    <!-- Recipe Cards -->
     {% if all_recipes %}
-        <table id="recipes-table" border="1" style="border-collapse: collapse; width: 70%; table-layout: fixed; float: left;">
-            <thead>
-                <tr>
-                    <th style="width: 50%;" onclick="sortTable('recipes-table', 0)">Drink Name <span class="sort-arrow"></span></th>
-                    <th style="width: 50%;" onclick="sortTable('recipes-table', 1)">Base Spirit <span class="sort-arrow"></span></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for recipe in all_recipes %}
-                    <tr onclick="showRecipe(this)" data-drink="{{ recipe.drink }}">
-                        <td>{{ recipe.drink }}</td>
-                        <td>{{ recipe.base_spirit }}</td>
-                    </tr>
+    <div id="recipes-container" class="mt-6 space-y-8">
+        {% for group in all_recipes | groupby('base_spirit_category') %}
+        {% set spirit = ((group.grouper or '') | trim) | default('Unknown', true) %}
+        {% set spirit_key = spirit.lower() %}
+        {% set group_recipes = group.list | sort(attribute='drink', case_sensitive=False) %}
+        <section class="recipe-group space-y-4" data-spirit="{{ spirit_key }}">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">{{ spirit }}</h2>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {% for recipe in group_recipes %}
+                {% set summary = (recipe.ingredient_summary | default('', true)) | trim %}
+                <article
+                    class="recipe-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
+                    data-drink="{{ recipe.drink|escape }}"
+                    data-base-spirit="{{ recipe.base_spirit|default('', true)|escape }}"
+                    data-base-category="{{ spirit|escape }}"
+                >
+                    <button
+                        type="button"
+                        aria-expanded="false"
+                        class="recipe-card-toggle w-full text-left p-4 flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-logo"
+                    >
+                        <header class="flex justify-between items-start gap-3">
+                            <h3 class="text-lg font-semibold text-text-normal truncate">{{ recipe.drink }}</h3>
+                        </header>
+                        <p class="recipe-summary text-xs uppercase tracking-wide text-text-muted whitespace-nowrap overflow-hidden text-ellipsis" title="{{ summary or 'No spirits listed' }}">
+                            {{ summary or 'No spirits listed' }}
+                        </p>
+                    </button>
+                    <div class="recipe-card-details hidden border-t border-border bg-background-dark p-4 text-sm text-text-normal">
+                        <p class="text-text-muted">Select to load details.</p>
+                    </div>
+                </article>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+    <p id="recipes-empty" class="mt-6 hidden text-sm text-text-muted">No recipes match your filters.</p>
     {% else %}
-        <p style="width: 70%; float: left;">No recipes yet.</p>
+    <p class="mt-6 text-text-muted">No recipes yet. Use the button above to add your first cocktail.</p>
     {% endif %}
 
-    <!-- Sidebar on Right -->
-    <div style="width: 30%; float: right; padding: 20px; background-color: #f0f0f0; height: 80vh; overflow-y: auto; box-sizing: border-box; position: relative;">
-        <div id="recipe-details" style="display: none;">
-            <h3 id="recipe-name"></h3>
-            <p><strong>Base Spirit:</strong> <span id="recipe-base-spirit"></span></p>
-            <h4>Ingredients:</h4>
-            <ul id="recipe-ingredients"></ul>
-            <p><strong>Glass:</strong> <span id="recipe-glass"></span></p>
-            <p><strong>Garnish:</strong> <span id="recipe-garnish"></span></p>
-            <p><strong>Method:</strong> <span id="recipe-method"></span></p>
-            <p><strong>Ice:</strong> <span id="recipe ice"></span></p>
-            <p><strong>Notes:</strong> <span id="recipe-notes"></span></p>
-            <button id="edit-recipe" style="background-color: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Edit</button>
-            <button id="delete-recipe" style="background-color: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Delete</button>
-            <button id="clear-sidebar" style="background-color: #888; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px;">Clear</button>
-        </div>
-        <p id="no-recipe-selected" style="display: block;">Click a drink to see its recipe.</p>
-    </div>
-
-    <div style="clear: both;"></div>
-
     <!-- Add Recipe Modal -->
-    <div id="add-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-        <div style="background-color: white; margin: 10% auto; padding: 20px; width: 50%; border-radius: 5px;">
-            <h2>Add New Recipe</h2>
-            <form id="add-recipe-form" method="post">
-                <label for="add-drink">Drink Name:</label>
-                <input type="text" id="add-drink" name="drink" required><br><br>
+    <div id="add-modal" class="modal-backdrop hidden">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Add New Recipe</h2>
+                <button type="button" onclick="closeAddModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <form id="add-recipe-form" method="post" class="flex flex-col max-h-[80vh]">
+                <div class="modal-body space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Drink Name</span>
+                            <input type="text" id="add-drink" name="drink" required class="modal-input" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Base Spirit</span>
+                            <div class="base-spirit-field relative w-full">
+                                <input type="text" id="add-base_spirit-input" placeholder="Type to filter base spirits..." oninput="filterBaseSpirit('add')" class="modal-input w-full" autocomplete="off" />
+                                <div id="add-base_spirit-dropdown" class="ingredient-dropdown hidden" role="listbox"></div>
+                            </div>
+                            <select id="add-base_spirit" name="base_spirit" class="hidden">
+                                <option value="">None</option>
+                                {% for cat in lists['categories'] %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                                {% for cat, subs in lists['subcategories'].items() %}
+                                    {% for sub in subs %}
+                                        <option value="{{ sub }}">{{ sub }} ({{ cat }})</option>
+                                    {% endfor %}
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Glass</span>
+                            <select id="add-glass" name="glass" class="modal-input">
+                                <option value="">None</option>
+                                {% for glass in lists['glass_types'] %}
+                                    <option value="{{ glass }}">{{ glass }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Garnish</span>
+                            <input type="text" id="add-garnish" name="garnish" class="modal-input" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Method</span>
+                            <select id="add-method" name="method" class="modal-input">
+                                <option value="">None</option>
+                                {% for method in lists['methods'] %}
+                                    <option value="{{ method }}">{{ method }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Ice</span>
+                            <select id="add_ice" name="Ice" class="modal-input">
+                                <option value="">None</option>
+                                {% for ice in lists['ice_options'] %}
+                                    <option value="{{ ice }}">{{ ice }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Notes</span>
+                        <textarea id="add-notes" name="notes" rows="3" class="modal-input"></textarea>
+                    </label>
 
-                <label for="add-base_spirit">Base Spirit:</label>
-                <input type="text" id="add-base_spirit-input" placeholder="Type to filter base spirits..." onkeyup="filterBaseSpirit('add')">
-                <div id="add-base_spirit-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                <select id="add-base_spirit" name="base_spirit" style="display: none;">
-                    <option value="">None</option>
-                    {% for cat in lists['categories'] %}
-                        <option value="{{ cat }}">{{ cat }}</option>
-                    {% endfor %}
-                    {% for cat, subs in lists['subcategories'].items() %}
-                        {% for sub in subs %}
-                            <option value="{{ sub }}">{{ sub }} ({{ cat }})</option>
-                        {% endfor %}
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="add-glass">Glass:</label>
-                <select id="add-glass" name="glass">
-                    <option value="">None</option>
-                    {% for glass in lists['glass_types'] %}
-                        <option value="{{ glass }}">{{ glass }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="add-garnish">Garnish:</label>
-                <input type="text" id="add-garnish" name="garnish"><br><br>
-
-                <label for="add-method">Method:</label>
-                <select id="add-method" name="method">
-                    <option value="">None</option>
-                    {% for method in lists['methods'] %}
-                        <option value="{{ method }}">{{ method }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="add_ice">Ice:</label>
-                <select id="add_ice" name="Ice">
-                    <option value="">None</option>
-                    {% for ice in lists['ice_options'] %}
-                        <option value="{{ ice }}">{{ ice }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="add-notes">Notes:</label>
-                <textarea id="add-notes" name="notes"></textarea><br><br>
-
-                <h3>Ingredients</h3>
-                <div id="add-ingredients-list">
-                    <div class="ingredient-row">
-                        <input type="text" name="ingredient_0" class="ingredient-input" placeholder="Type to search ingredients..." onkeyup="filterIngredients(this, 0)">
-                        <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                        <input type="text" name="quantity_0" placeholder="Quantity" style="width: 100px;">
-                        <select name="unit_0">
-                            {% for unit in lists['units'] %}
-                                <option value="{{ unit }}" {% if unit == 'oz' %}selected{% endif %}>{{ unit }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" onclick="removeIngredient(this)" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Ingredients</h3>
+                            <button type="button" onclick="addIngredient('add')" class="modal-button-secondary text-xs">Add Ingredient</button>
+                        </div>
+                        <div id="add-ingredients-list" class="space-y-2">
+                            <div class="ingredient-row flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background-light/80 px-3 py-2">
+                                <div class="ingredient-field relative flex-1 min-w-[12rem]">
+                                    <input type="text" name="ingredient_0" class="ingredient-input modal-input w-full" placeholder="Type to search ingredients..." oninput="filterIngredients(this, 0)" autocomplete="off" />
+                                    <div class="ingredient-dropdown hidden" role="listbox"></div>
+                                </div>
+                                <input type="text" name="quantity_0" placeholder="Qty" class="quantity-input modal-input w-20" />
+                                <select name="unit_0" class="unit-select modal-input">
+                                    {% for unit in lists['units'] %}
+                                        <option value="{{ unit }}" {% if unit == 'oz' %}selected{% endif %}>{{ unit }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" onclick="removeIngredient(this)" class="ingredient-remove-btn rounded-full bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-500 transition">Remove</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button type="button" onclick="addIngredient('add')" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Add Ingredient</button><br><br>
-
-                <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Save Recipe</button>
-                <button type="button" onclick="closeAddModal()" style="background-color: #ff4444; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeAddModal()" class="modal-button-secondary">Cancel</button>
+                    <button type="submit" class="modal-button-primary">Save Recipe</button>
+                </div>
             </form>
         </div>
-    </div>
+    </div>    <!-- Edit Recipe Modal -->
+    <div id="edit-modal" class="modal-backdrop hidden">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Edit Recipe</h2>
+                <button type="button" onclick="closeEditModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <form id="edit-recipe-form" class="flex flex-col max-h-[80vh]">
+                <div class="modal-body space-y-4">
+                    <input type="hidden" id="edit-original-drink" name="original_drink">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Drink Name</span>
+                            <input type="text" id="edit-drink" name="drink" required class="modal-input" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Base Spirit</span>
+                            <div class="base-spirit-field relative w-full">
+                                <input type="text" id="edit-base_spirit-input" placeholder="Type to filter base spirits..." oninput="filterBaseSpirit('edit')" class="modal-input w-full" autocomplete="off" />
+                                <div id="edit-base_spirit-dropdown" class="ingredient-dropdown hidden" role="listbox"></div>
+                            </div>
+                            <select id="edit-base_spirit" name="base_spirit" class="hidden">
+                                <option value="">None</option>
+                                {% for cat in lists['categories'] %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                                {% for cat, subs in lists['subcategories'].items() %}
+                                    {% for sub in subs %}
+                                        <option value="{{ sub }}">{{ sub }} ({{ cat }})</option>
+                                    {% endfor %}
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Glass</span>
+                            <select id="edit-glass" name="glass" class="modal-input">
+                                <option value="">None</option>
+                                {% for glass in lists['glass_types'] %}
+                                    <option value="{{ glass }}">{{ glass }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Garnish</span>
+                            <input type="text" id="edit-garnish" name="garnish" class="modal-input" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Method</span>
+                            <select id="edit-method" name="method" class="modal-input">
+                                <option value="">None</option>
+                                {% for method in lists['methods'] %}
+                                    <option value="{{ method }}">{{ method }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Ice</span>
+                            <select id="edit_ice" name="Ice" class="modal-input">
+                                <option value="">None</option>
+                                {% for ice in lists['ice_options'] %}
+                                    <option value="{{ ice }}">{{ ice }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Notes</span>
+                        <textarea id="edit-notes" name="notes" rows="3" class="modal-input"></textarea>
+                    </label>
 
-    <!-- Edit Recipe Modal -->
-    <div id="edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-        <div style="background-color: white; margin: 10% auto; padding: 20px; width: 50%; border-radius: 5px;">
-            <h2>Edit Recipe</h2>
-            <form id="edit-recipe-form">
-                <input type="hidden" id="edit-original-drink" name="original_drink">
-                <label for="edit-drink">Drink Name:</label>
-                <input type="text" id="edit-drink" name="drink" required><br><br>
-
-                <label for="edit-base_spirit">Base Spirit:</label>
-                <input type="text" id="edit-base_spirit-input" placeholder="Type to filter base spirits..." onkeyup="filterBaseSpirit('edit')">
-                <div id="edit-base_spirit-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                <select id="edit-base_spirit" name="base_spirit" style="display: none;">
-                    <option value="">None</option>
-                    {% for cat in lists['categories'] %}
-                        <option value="{{ cat }}">{{ cat }}</option>
-                    {% endfor %}
-                    {% for cat, subs in lists['subcategories'].items() %}
-                        {% for sub in subs %}
-                            <option value="{{ sub }}">{{ sub }} ({{ cat }})</option>
-                        {% endfor %}
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="edit-glass">Glass:</label>
-                <select id="edit-glass" name="glass">
-                    <option value="">None</option>
-                    {% for glass in lists['glass_types'] %}
-                        <option value="{{ glass }}">{{ glass }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="edit-garnish">Garnish:</label>
-                <input type="text" id="edit-garnish" name="garnish"><br><br>
-
-                <label for="edit-method">Method:</label>
-                <select id="edit-method" name="method">
-                    <option value="">None</option>
-                    {% for method in lists['methods'] %}
-                        <option value="{{ method }}">{{ method }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="edit_ice">Ice:</label>
-                <select id="edit_ice" name="Ice">
-                    <option value="">None</option>
-                    {% for ice in lists['ice_options'] %}
-                        <option value="{{ ice }}">{{ ice }}</option>
-                    {% endfor %}
-                </select><br><br>
-
-                <label for="edit-notes">Notes:</label>
-                <textarea id="edit-notes" name="notes"></textarea><br><br>
-
-                <h3>Ingredients</h3>
-                <div id="edit-ingredients-list"></div>
-                <button type="button" onclick="addIngredient('edit')" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Add Ingredient</button><br><br>
-
-                <button type="button" onclick="saveEdit()" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
-                <button type="button" onclick="closeEditModal()" style="background-color: #ff4444; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Ingredients</h3>
+                            <button type="button" onclick="addIngredient('edit')" class="modal-button-secondary text-xs">Add Ingredient</button>
+                        </div>
+                        <div id="edit-ingredients-list" class="space-y-2"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeEditModal()" class="modal-button-secondary">Cancel</button>
+                    <button type="button" onclick="saveEdit()" class="modal-button-primary">Save Changes</button>
+                </div>
             </form>
         </div>
-    </div>
-
-    <div id="add-ingredient-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close" onclick="document.getElementById('add-ingredient-modal').style.display='none'">×</span>
-            <h2>Add New Ingredient</h2>
-            <form id="add-ingredient-form">
-                <input type="text" id="new-ingredient-name" name="name" placeholder="Ingredient Name" required readonly><br><br>
-                <select name="category" id="new-ingredient-category" required>
-                    <option value="" disabled selected>Select Category</option>
-                    {% for category in lists['categories'] %}
-                        <option value="{{ category }}">{{ category }}</option>
-                    {% endfor %}
-                </select><br><br>
-                <select name="sub_category" id="new-ingredient-subcategory">
-                    <option value="">None</option>
-                </select><br><br>
-                <input type="submit" value="Add Ingredient">
+    </div>    <div id="add-ingredient-modal" class="modal-backdrop hidden">
+        <div class="modal-panel max-w-lg">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Add New Ingredient</h2>
+                <button type="button" onclick="closeAddIngredientModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <form id="add-ingredient-form" class="flex flex-col max-h-[70vh]">
+                <div class="modal-body space-y-4 text-sm">
+                    <label class="flex flex-col gap-1">
+                        <span class="modal-label">Ingredient Name</span>
+                        <input type="text" id="new-ingredient-name" name="name" placeholder="Ingredient Name" required readonly class="modal-input" />
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="modal-label">Category</span>
+                        <select name="category" id="new-ingredient-category" required class="modal-input">
+                            <option value="" disabled selected>Select Category</option>
+                            {% for category in lists['categories'] %}
+                                <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="modal-label">Subcategory</span>
+                        <select name="sub_category" id="new-ingredient-subcategory" class="modal-input">
+                            <option value="">None</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeAddIngredientModal()" class="modal-button-secondary">Cancel</button>
+                    <button type="submit" class="modal-button-primary">Add Ingredient</button>
+                </div>
             </form>
         </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3>Confirm Deletion</h3>
-            <p id="delete-modal-message"></p>
-            <button id="confirm-delete" style="background-color: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Confirm</button>
-            <button id="cancel-delete" style="background-color: #ccc; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cancel</button>
+    </div>    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal-backdrop hidden">
+        <div class="modal-panel max-w-sm">
+            <div class="modal-header">
+                <h2 class="text-lg font-semibold text-text-normal">Delete Recipe</h2>
+                <button type="button" onclick="closeDeleteModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <div class="modal-body space-y-4">
+                <p id="delete-modal-message" class="text-sm text-text-normal"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-delete" type="button" class="modal-button-secondary">Cancel</button>
+                <button id="confirm-delete" type="button" class="modal-button-danger">Delete</button>
+            </div>
         </div>
     </div>
+
+    <div id="recipes-data"
+         class="hidden"
+         data-categories='{{ lists["categories"] | tojson }}'
+         data-subcategories='{{ lists["subcategories"] | tojson }}'
+         data-spirit-categories='{{ spirit_categories | tojson }}'></div>
 
     <!-- Hidden select for units -->
-    <select id="unit-template" style="display: none;">
-        {% for unit in lists['units'] %}
-            <option value="{{ unit }}">{{ unit }}</option>
-        {% endfor %}
-    </select>
-
     <script>
         let ingredientCount = 1;
         let editIngredientCount = 0;
@@ -239,23 +333,148 @@
         let possibleIngredients = [];
         let allIngredientOptions = []; // Initialize as array
 
+        const recipesDataElement = document.getElementById('recipes-data');
+        const rawCategories = recipesDataElement?.dataset.categories || '[]';
+        const rawSubcategories = recipesDataElement?.dataset.subcategories || '{}';
+        const rawSpiritCategories = recipesDataElement?.dataset.spiritCategories || '[]';
+
+        const baseSpiritCategoryLookup = (() => {
+            const lookup = {};
+            let subcategories = {};
+            let categories = [];
+            try {
+                subcategories = JSON.parse(rawSubcategories);
+            } catch (error) {
+                console.error('Unable to parse subcategory data:', error);
+            }
+            Object.entries(subcategories).forEach(([category, subs]) => {
+                const loweredCategory = (category || '').toLowerCase();
+                if (loweredCategory) {
+                    lookup[loweredCategory] = category;
+                }
+                (subs || []).forEach((sub) => {
+                    const loweredSub = (sub || '').toLowerCase();
+                    if (loweredSub) {
+                        lookup[loweredSub] = category;
+                    }
+                });
+            });
+
+            try {
+                categories = JSON.parse(rawCategories);
+            } catch (error) {
+                console.error('Unable to parse category data:', error);
+            }
+            (categories || []).forEach((category) => {
+                const lowered = (category || '').toLowerCase();
+                if (lowered && !lookup[lowered]) {
+                    lookup[lowered] = category;
+                }
+            });
+            return lookup;
+        })();
+
+        const spiritCategorySet = (() => {
+            try {
+                return new Set(JSON.parse(rawSpiritCategories).map((category) => String(category || '').toLowerCase()));
+            } catch (error) {
+                console.error('Unable to parse spirit categories:', error);
+                return new Set();
+            }
+        })();
+
+        function resolveBaseCategory(value) {
+            const normalized = typeof value === 'string' ? value.trim() : '';
+            if (!normalized) {
+                return 'Unknown';
+            }
+            const match = baseSpiritCategoryLookup[normalized.toLowerCase()];
+            if (match) {
+                return match;
+            }
+            return normalized;
+        }
+
+        function summarizeSpiritIngredients(ingredients) {
+            if (!Array.isArray(ingredients)) {
+                return [];
+            }
+            const summary = [];
+            const seen = new Set();
+            ingredients.forEach((item) => {
+                if (!item) {
+                    return;
+                }
+                const name = (item.ingredient || '').trim();
+                if (!name) {
+                    return;
+                }
+                const candidates = [
+                    item.sub_category || '',
+                    item.category || '',
+                ];
+                let isSpirit = false;
+                for (const candidate of candidates) {
+                    if (!candidate) {
+                        continue;
+                    }
+                    const resolved = resolveBaseCategory(candidate);
+                    if (spiritCategorySet.has(resolved.toLowerCase())) {
+                        isSpirit = true;
+                        break;
+                    }
+                }
+                if (!isSpirit) {
+                    const resolvedFromName = resolveBaseCategory(name);
+                    if (spiritCategorySet.has(resolvedFromName.toLowerCase())) {
+                        isSpirit = true;
+                    }
+                }
+                if (isSpirit && !seen.has(name)) {
+                    summary.push(name);
+                    seen.add(name);
+                }
+            });
+            return summary;
+        }
+
+        const makeIngredientRowMarkup = (index) => `
+            <div class="ingredient-row flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background-light/80 px-3 py-2">
+                <div class="ingredient-field relative flex-1 min-w-[12rem]">
+                    <input
+                        type="text"
+                        name="ingredient_${index}"
+                        class="ingredient-input modal-input w-full"
+                        placeholder="Type to search ingredients..."
+                        autocomplete="off"
+                        oninput="filterIngredients(this, ${index})"
+                    />
+                    <div class="ingredient-dropdown hidden" role="listbox"></div>
+                </div>
+                <input type="text" name="quantity_${index}" placeholder="Qty" class="quantity-input modal-input w-20" />
+                <select name="unit_${index}" class="unit-select modal-input">
+                    {% for unit in lists['units'] %}
+                        <option value="{{ unit }}" {% if unit == 'oz' %}selected{% endif %}>{{ unit }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" onclick="removeIngredient(this)" class="ingredient-remove-btn rounded-full bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-500 transition">Remove</button>
+            </div>
+        `;
+
         // Fetch the master list of ingredient names, categories, and subcategories on page load
         document.addEventListener('DOMContentLoaded', function() {
             fetch('/possible-ingredients-json')
                 .then(response => {
                     if (!response.ok) {
                         return response.text().then(text => {
-                            throw new Error(`HTTP error! Status: ${response.status}, Response: ${text.substring(0, 100)}...`);
                         });
                     }
                     return response.json();
                 })
                 .then(data => {
                     possibleIngredients = data; // Array of all unique names, categories, and subcategories
-                    console.log('Fetched possibleIngredients:', possibleIngredients); // Debug log
                     // Use the data directly as allIngredientOptions, ensuring uniqueness with Set
                     allIngredientOptions = [...new Set(possibleIngredients)].sort(); // Remove duplicates and sort
-                    console.log('allIngredientOptions:', allIngredientOptions); // Debug log
                 })
                 .catch(error => {
                     console.error('Error fetching possible ingredients:', error);
@@ -272,17 +491,18 @@
                 closeDeleteModal();
             });
 
-            // Clear sidebar button handler
-            document.getElementById('clear-sidebar').addEventListener('click', function() {
-                clearSidebar();
-            });
+            initializeRecipeCards();
+            filterCards();
 
             // Reselect the drink after edit
             const selectedDrink = sessionStorage.getItem('selectedDrink');
             if (selectedDrink) {
-                const row = document.querySelector(`#recipes-table tr[data-drink="${selectedDrink}"]`);
-                if (row) {
-                    showRecipe(row);
+                const escapeValue = window.CSS && window.CSS.escape
+                    ? window.CSS.escape(selectedDrink)
+                    : selectedDrink.replace(/(["\\])/g, '\\$1');
+                const card = document.querySelector(`.recipe-card[data-drink=\"${escapeValue}\"]`);
+                if (card) {
+                    toggleRecipeCard(card);
                 }
                 sessionStorage.removeItem('selectedDrink'); // Clear after use
             }
@@ -299,7 +519,6 @@
                     })
                         .then(response => {
                             if (!response.ok) {
-                                throw new Error(`HTTP error! Status: ${response.status}`);
                             }
                             return response.text();
                         })
@@ -314,21 +533,23 @@
                             allIngredientOptions = [...new Set(possibleIngredients)].sort();
 
                             // Update the input field
-                            const input = addIngredientForm.dataset.input;
-                            if (input) {
-                                input.value = newName;
+                            const targetInput = addIngredientForm.currentIngredientInput;
+                            if (targetInput instanceof HTMLInputElement) {
+                                targetInput.value = newName;
+                                const dropdown = targetInput.closest('.ingredient-field')?.querySelector('.ingredient-dropdown');
+                            if (dropdown) {
+                                dropdown.classList.add('hidden');
+                                dropdown.innerHTML = '';
+                                dropdown.classList.remove('ingredient-dropdown--above');
+                                dropdown.style.maxHeight = '';
                             }
-                            document.getElementById('add-ingredient-modal').style.display = 'none';
+                            }
+                            addIngredientForm.currentIngredientInput = null;
+                            closeAddIngredientModal();
                             // Clear the form
-                            this.reset();
                             // Reset subcategory select
                             const subcatSelect = document.getElementById('new-ingredient-subcategory');
                             subcatSelect.innerHTML = '<option value="">None</option>';
-                            // Hide dropdown
-                            const dropdown = input.nextElementSibling;
-                            if (dropdown) {
-                                dropdown.style.display = 'none';
-                            }
                         })
                         .catch(error => {
                             console.error('Error adding ingredient:', error);
@@ -346,7 +567,6 @@
                         fetch(`/subcategories/${encodeURIComponent(category)}`)
                             .then(response => {
                                 if (!response.ok) {
-                                    throw new Error(`HTTP error! Status: ${response.status}`);
                                 }
                                 return response.json();
                             })
@@ -366,191 +586,258 @@
             }
         });
 
-        function clearSidebar() {
-            document.getElementById('recipe-details').style.display = 'none';
-            document.getElementById('no-recipe-selected').style.display = 'block';
-            currentDrink = null;
+        let activeCard = null;
+
+        function collapseCard(card) {
+            if (!card) {
+                return;
+            }
+            const details = card.querySelector('.recipe-card-details');
+            if (details) {
+                details.classList.add('hidden');
+            }
+            const toggle = card.querySelector('.recipe-card-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+            card.classList.remove('ring-2', 'ring-logo');
+            if (activeCard === card) {
+                activeCard = null;
+            }
+            if (currentDrink === card.dataset.drink) {
+                currentDrink = null;
+            }
         }
 
-        // Show recipe in sidebar
-        window.showRecipe = function(row) {
-            const drink = row.getAttribute('data-drink');
-            currentDrink = drink;
-            console.log('Fetching recipe for:', drink); // Debug log
-            fetch(`/recipe/${drink}`)
+        function renderRecipeDetails(card, data) {
+            const details = card.querySelector('.recipe-card-details');
+            if (!details) {
+                return;
+            }
+
+            const summaryLine = card.querySelector('.recipe-summary');
+            if (summaryLine) {
+                const spiritIngredients = summarizeSpiritIngredients(data.ingredients || []);
+                const ingredientSummary = spiritIngredients.join(' | ');
+                const summaryText = ingredientSummary || 'No spirits listed';
+                summaryLine.textContent = summaryText;
+                summaryLine.title = summaryText;
+                card.dataset.spiritSummary = summaryText;
+            }
+
+            const ingredientsMarkup = (data.ingredients || []).map(ing => {
+                const parts = [ing.quantity, ing.unit, ing.ingredient].filter(Boolean).join(' ').trim();
+                return `<li class="flex items-start text-sm text-text-normal">${parts || 'Ingredient'}</li>`;
+            }).join('');
+
+            const ingredientsHtml = ingredientsMarkup || '<li class="text-sm text-text-muted">No ingredients listed.</li>';
+
+            const drinkName = data.name || card.dataset.drink;
+            const glass = data.glass || 'None';
+            const garnish = data.garnish || 'None';
+            const method = data.method || 'None';
+            const ice = data.ice || data.Ice || 'None';
+            const notes = data.notes || 'None';
+
+            details.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Ingredients</p>
+                        <ul class="space-y-1">${ingredientsHtml}</ul>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs uppercase tracking-wide text-text-muted">
+                        <span>Glass</span><span class="text-sm text-text-normal">${glass}</span>
+                        <span>Garnish</span><span class="text-sm text-text-normal">${garnish}</span>
+                        <span>Method</span><span class="text-sm text-text-normal">${method}</span>
+                        <span>Ice</span><span class="text-sm text-text-normal">${ice}</span>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Notes</p>
+                        <p class="text-sm text-text-normal whitespace-pre-wrap">${notes}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button type="button" class="recipe-card-edit rounded-full bg-logo px-4 py-2 text-light-text-normal text-sm hover:ring-2 hover:ring-logo transition">Edit</button>
+                        <button type="button" class="recipe-card-delete rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition">Delete</button>
+                    </div>
+                </div>
+            `;
+
+            const editButton = details.querySelector('.recipe-card-edit');
+            const deleteButton = details.querySelector('.recipe-card-delete');
+
+            if (editButton) {
+                editButton.addEventListener('click', () => {
+                    openEditModal(drinkName);
+                });
+            }
+            if (deleteButton) {
+                deleteButton.addEventListener('click', () => {
+                    currentDrink = drinkName;
+                    const modal = document.getElementById('delete-modal');
+                    const message = document.getElementById('delete-modal-message');
+                    message.textContent = `Are you sure you want to delete ${drinkName}?`;
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex';
+                    }
+                });
+            }
+        }
+
+        function loadRecipeDetails(card) {
+            const drink = card.dataset.drink;
+            const details = card.querySelector('.recipe-card-details');
+            if (!details) {
+                return;
+            }
+
+            details.innerHTML = '<p class="text-sm text-text-muted">Loading details...</p>';
+
+            fetch(`/recipe/${encodeURIComponent(drink)}`)
                 .then(response => {
-                    console.log('Fetch response status:', response.status); // Debug log
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Recipe data:', data); // Debug log
-                    const nameElement = document.getElementById('recipe-name');
-                    const baseSpiritElement = document.getElementById('recipe-base-spirit');
-                    const ingredientsList = document.getElementById('recipe-ingredients');
-                    const glassElement = document.getElementById('recipe-glass');
-                    const garnishElement = document.getElementById('recipe-garnish');
-                    const methodElement = document.getElementById('recipe-method');
-                    const iceElement = document.getElementById('recipe ice');
-                    const notesElement = document.getElementById('recipe-notes');
-                    const detailsDiv = document.getElementById('recipe-details');
-                    const noRecipeSelected = document.getElementById('no-recipe-selected');
-
-                    if (!nameElement || !baseSpiritElement || !ingredientsList || !glassElement || !garnishElement || !methodElement || !iceElement || !notesElement || !detailsDiv || !noRecipeSelected) {
-                        console.error('Missing DOM elements:', {
-                            nameElement, baseSpiritElement, ingredientsList, glassElement, garnishElement, methodElement, iceElement, notesElement, detailsDiv, noRecipeSelected
-                        });
-                        return;
-                    }
-
-                    nameElement.textContent = data.name || 'Unknown';
-                    baseSpiritElement.textContent = data.base_spirit || 'None';
-                    ingredientsList.innerHTML = '';
-                    if (data.ingredients && Array.isArray(data.ingredients)) {
-                        data.ingredients.forEach(ing => {
-                            const li = document.createElement('li');
-                            li.textContent = `${ing.quantity || ''} ${ing.unit || ''} ${ing.ingredient || ''}`.trim();
-                            ingredientsList.appendChild(li);
-                        });
-                    } else {
-                        console.warn('No valid ingredients array:', data.ingredients);
-                    }
-                    glassElement.textContent = data.glass || 'None';
-                    garnishElement.textContent = data.garnish || 'None';
-                    methodElement.textContent = data.method || 'None';
-                    iceElement.textContent = data.ice || 'None';
-                    notesElement.textContent = data.notes || 'None';
-                    detailsDiv.style.display = 'block';
-                    noRecipeSelected.style.display = 'none';
-
-                    document.getElementById('edit-recipe').onclick = function() {
-                        openEditModal(drink);
-                    };
-                    document.getElementById('delete-recipe').onclick = function() {
-                        const modal = document.getElementById('delete-modal');
-                        const message = document.getElementById('delete-modal-message');
-                        message.textContent = `Are you sure you want to delete ${drink}?`;
-                        modal.style.display = 'block';
-                    };
+                    const baseSpiritValue = data.base_spirit && data.base_spirit.trim()
+                        ? data.base_spirit.trim()
+                        : '';
+                    card.dataset.baseSpirit = baseSpiritValue;
+                    const resolvedCategory = resolveBaseCategory(baseSpiritValue);
+                    card.dataset.baseCategory = resolvedCategory;
+                    renderRecipeDetails(card, data);
+                    card.dataset.loaded = 'true';
                 })
                 .catch(error => {
                     console.error('Error fetching recipe:', error);
-                    alert('Error fetching recipe details. Check the console for details.');
+                    details.innerHTML = '<p class="text-sm text-text-muted">Unable to load recipe details.</p>';
                 });
-        };
+        }
 
-        // Sorting function
-        window.sortTable = function(tableId, colIndex) {
-            const table = document.getElementById(tableId);
-            const tbody = table.getElementsByTagName('tbody')[0];
-            const rows = Array.from(tbody.getElementsByTagName('tr'));
-            const header = table.getElementsByTagName('th')[colIndex];
-            const currentDirection = header.getAttribute('data-sort') || 'asc';
-            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-
-            header.setAttribute('data-sort', newDirection);
-            const arrows = table.querySelectorAll('.sort-arrow');
-            arrows.forEach(arrow => arrow.textContent = '');
-            header.querySelector('.sort-arrow').textContent = newDirection === 'asc' ? '▲' : '▼';
-
-            rows.sort((rowA, rowB) => {
-                const cellA = rowA.cells[colIndex].textContent.trim().toLowerCase();
-                const cellB = rowB.cells[colIndex].textContent.trim().toLowerCase();
-                return newDirection === 'asc' ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-            });
-
-            rows.forEach(row => tbody.appendChild(row));
-        };
-
-        // Filtering function
-        window.filterTable = function() {
-            const nameFilter = document.getElementById('filter-name').value.toLowerCase();
-            const spiritFilter = document.getElementById('filter-spirit').value.toLowerCase();
-            const table = document.getElementById('recipes-table');
-            if (!table) return; // Skip if table doesn't exist (no recipes)
-
-            const tbody = table.getElementsByTagName('tbody')[0];
-            const rows = tbody.getElementsByTagName('tr');
-
-            for (let i = 0; i < rows.length; i++) {
-                const name = rows[i].cells[0].textContent.toLowerCase();
-                const spirit = rows[i].cells[1].textContent.toLowerCase();
-
-                const nameMatch = name.includes(nameFilter);
-                const spiritMatch = spirit.includes(spiritFilter);
-
-                if (nameMatch && spiritMatch) {
-                    rows[i].style.display = '';
-                } else {
-                    rows[i].style.display = 'none';
-                    // Hide sidebar if the current drink is filtered out
-                    if (currentDrink && name === currentDrink.toLowerCase()) {
-                        document.getElementById('recipe-details').style.display = 'none';
-                        document.getElementById('no-recipe-selected').style.display = 'block';
-                        currentDrink = null;
-                    }
+        function toggleRecipeCard(card) {
+            if (!card) {
+                return;
+            }
+            if (card === activeCard) {
+                collapseCard(card);
+                return;
+            }
+            if (activeCard) {
+                collapseCard(activeCard);
+            }
+            activeCard = card;
+            currentDrink = card.dataset.drink;
+            card.classList.add('ring-2', 'ring-logo');
+            const toggle = card.querySelector('.recipe-card-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+            const details = card.querySelector('.recipe-card-details');
+            if (details) {
+                details.classList.remove('hidden');
+                if (card.dataset.loaded !== 'true') {
+                    loadRecipeDetails(card);
                 }
             }
+        }
+
+        function initializeRecipeCards() {
+            const toggles = document.querySelectorAll('.recipe-card-toggle');
+            toggles.forEach(toggle => {
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.addEventListener('click', () => {
+                    const card = toggle.closest('.recipe-card');
+                    toggleRecipeCard(card);
+                });
+            });
+        }
+        window.filterCards = function() {
+            const nameInput = document.getElementById('filter-name');
+            const spiritInput = document.getElementById('filter-spirit');
+            const nameFilter = nameInput ? nameInput.value.trim().toLowerCase() : '';
+            const spiritFilter = spiritInput ? spiritInput.value.trim().toLowerCase() : '';
+
+            const cards = document.querySelectorAll('.recipe-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const drinkName = (card.dataset.drink || '').toLowerCase();
+                const baseSpirit = (card.dataset.baseSpirit || '').toLowerCase();
+                const baseCategory = (card.dataset.baseCategory || '').trim().toLowerCase();
+                const matchesName = !nameFilter || drinkName.includes(nameFilter);
+                const matchesSpirit =
+                    !spiritFilter ||
+                    baseSpirit.includes(spiritFilter) ||
+                    baseCategory.includes(spiritFilter);
+                const shouldShow = matchesName && matchesSpirit;
+                card.classList.toggle('hidden', !shouldShow);
+                if (!shouldShow && activeCard === card) {
+                    collapseCard(card);
+                }
+                if (shouldShow) {
+                    visibleCount += 1;
+                }
+            });
+
+            const groups = document.querySelectorAll('.recipe-group');
+            groups.forEach((group) => {
+                const visibleCardsInGroup = Array.from(group.querySelectorAll('.recipe-card'))
+                    .filter((card) => !card.classList.contains('hidden'));
+                group.classList.toggle('hidden', visibleCardsInGroup.length === 0);
+            });
+
+            const emptyState = document.getElementById('recipes-empty');
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', visibleCount !== 0);
+            }
+
+            return visibleCount;
         };
 
+        window.resetRecipeFilters = function() {
+            const nameInput = document.getElementById('filter-name');
+            const spiritInput = document.getElementById('filter-spirit');
+            if (nameInput) {
+                nameInput.value = '';
+            }
+            if (spiritInput) {
+                spiritInput.value = '';
+            }
+            filterCards();
+        };
         function openAddModal() {
-            document.getElementById('add-modal').style.display = 'block';
+            const modal = document.getElementById('add-modal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
             ingredientCount = 1;
-            document.getElementById('add-ingredients-list').innerHTML = `
-                <div class="ingredient-row">
-                    <input type="text" name="ingredient_0" class="ingredient-input" placeholder="Type to search ingredients..." onkeyup="filterIngredients(this, 0)">
-                    <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                    <input type="text" name="quantity_0" placeholder="Quantity" style="width: 100px;">
-                    <select name="unit_0">
-                        {% for unit in lists['units'] %}
-                            <option value="{{ unit }}" {% if unit == 'oz' %}selected{% endif %}>{{ unit }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" onclick="removeIngredient(this)" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-                </div>
-            `;
+            const list = document.getElementById('add-ingredients-list');
+            if (list) {
+                list.innerHTML = makeIngredientRowMarkup(0);
+            }
         }
 
         function closeAddModal() {
+            const modal = document.getElementById('add-modal');
             const form = document.getElementById('add-recipe-form');
-            form.reset(); // Clear all form fields
-            document.getElementById('add-modal').style.display = 'none';
-            // Reset ingredient list to initial state
+            form.reset();
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
             ingredientCount = 1;
-            document.getElementById('add-ingredients-list').innerHTML = `
-                <div class="ingredient-row">
-                    <input type="text" name="ingredient_0" class="ingredient-input" placeholder="Type to search ingredients..." onkeyup="filterIngredients(this, 0)">
-                    <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                    <input type="text" name="quantity_0" placeholder="Quantity" style="width: 100px;">
-                    <select name="unit_0">
-                        {% for unit in lists['units'] %}
-                            <option value="{{ unit }}">{{ unit }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" onclick="removeIngredient(this)" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-                </div>
-            `;
+            const list = document.getElementById('add-ingredients-list');
+            if (list) {
+                list.innerHTML = makeIngredientRowMarkup(0);
+            }
         }
 
         function addIngredient(modalType) {
             const list = document.getElementById(modalType + '-ingredients-list');
             const count = (modalType === 'add' ? ingredientCount++ : editIngredientCount++);
-            const row = document.createElement('div');
-            row.className = 'ingredient-row';
-            row.innerHTML = `
-                <input type="text" name="ingredient_${count}" class="ingredient-input" placeholder="Type to search ingredients..." onkeyup="filterIngredients(this, ${count})">
-                <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                <input type="text" name="quantity_${count}" placeholder="Quantity" style="width: 100px;">
-                <select name="unit_${count}">
-                    {% for unit in lists['units'] %}
-                        <option value="{{ unit }}" {% if unit == 'oz' %}selected{% endif %}>{{ unit }}</option>
-                    {% endfor %}
-                </select>
-                <button type="button" onclick="removeIngredient(this)" style="background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-            `;
-            list.appendChild(row);
+            if (!list) {
+                return;
+            }
+            list.insertAdjacentHTML('beforeend', makeIngredientRowMarkup(count));
         }
 
         function removeIngredient(button) {
@@ -558,66 +845,119 @@
         }
 
         function filterIngredients(input, index) {
-            console.log('filterIngredients called for index:', index); // Debug log
-            const value = input.value.toLowerCase().trim();
-            console.log('Input value:', value); // Debug log
-            const dropdown = input.nextElementSibling;
-            console.log('Dropdown element:', dropdown); // Debug log
-            if (!dropdown || !(dropdown instanceof HTMLElement)) {
+            if (!input) {
+                return;
+            }
+            const field = input.closest('.ingredient-field');
+            const dropdown = field ? field.querySelector('.ingredient-dropdown') : null;
+            if (!dropdown) {
                 console.error('Invalid dropdown element for input:', input);
                 return;
             }
-            dropdown.innerHTML = '';
-            dropdown.style.display = 'block';
 
-            if (!allIngredientOptions || allIngredientOptions.length === 0) {
-                console.warn('allIngredientOptions is empty or not initialized:', allIngredientOptions);
-                const div = document.createElement('div');
-                div.textContent = 'No ingredients available...';
-                div.style.padding = '5px';
-                dropdown.appendChild(div);
+            const rawValue = input.value.trim();
+            const value = rawValue.toLowerCase();
+            dropdown.innerHTML = '';
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('ingredient-dropdown--above');
+            dropdown.style.maxHeight = '';
+
+            if (!value) {
+                dropdown.classList.add('hidden');
+                dropdown.style.maxHeight = '';
                 return;
             }
 
-            const matches = allIngredientOptions.filter(opt => opt.toLowerCase().includes(value));
-            console.log('Matches found:', matches); // Debug log
+            const options = Array.isArray(allIngredientOptions) ? allIngredientOptions : [];
+            const matches = options.filter((opt) => opt.toLowerCase().includes(value));
+            const fragment = document.createDocumentFragment();
 
-            if (matches.length > 0) {
-                matches.forEach(opt => {
-                    const div = document.createElement('div');
-                    div.textContent = opt;
-                    div.style.padding = '5px';
-                    div.style.cursor = 'pointer';
-                    div.addEventListener('click', function() {
-                        input.value = opt;
-                        dropdown.style.display = 'none';
-                    });
-                    dropdown.appendChild(div);
+            matches.forEach((opt) => {
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'ingredient-option';
+                option.textContent = opt;
+                option.setAttribute('role', 'option');
+                option.addEventListener('click', () => {
+                    input.value = opt;
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('ingredient-dropdown--above');
+                    dropdown.style.maxHeight = '';
                 });
+                fragment.appendChild(option);
+            });
+
+            if (!matches.length) {
+                const empty = document.createElement('div');
+                empty.className = 'ingredient-option-empty';
+                empty.textContent = 'No matches found';
+                fragment.appendChild(empty);
             }
 
-            if (value && !matches.some(opt => opt.toLowerCase() === value)) {
-                const addOption = document.createElement('div');
-                addOption.textContent = `Add "${value}"`;
-                addOption.style.padding = '5px';
-                addOption.style.cursor = 'pointer';
-                addOption.style.backgroundColor = '#e0e0e0';
-                addOption.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    openAddIngredientModal(value, input, index);
+            const hasExactMatch = matches.some((opt) => opt.toLowerCase() === value);
+            if (rawValue && !hasExactMatch) {
+                const addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.className = 'ingredient-option ingredient-option-add';
+                addButton.textContent = `Add "${rawValue}"`;
+                addButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    openAddIngredientModal(rawValue, input, index);
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('ingredient-dropdown--above');
+                    dropdown.style.maxHeight = '';
                 });
-                dropdown.appendChild(addOption);
-            } else if (matches.length === 0) {
-                dropdown.style.display = 'none';
+                fragment.appendChild(addButton);
             }
 
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', function handler(event) {
-                if (!input.contains(event.target) && !dropdown.contains(event.target)) {
-                    dropdown.style.display = 'none';
-                    document.removeEventListener('click', handler);
+            dropdown.appendChild(fragment);
+
+            if (!dropdown.childElementCount) {
+                dropdown.classList.add('hidden');
+                dropdown.style.maxHeight = '';
+                return;
+            }
+
+            dropdown.classList.remove('hidden');
+            dropdown.scrollTop = 0;
+
+            window.requestAnimationFrame(() => {
+                const modalBody = dropdown.closest('.modal-body');
+                if (!modalBody) {
+                    dropdown.style.maxHeight = '';
+                    return;
+                }
+                const bodyRect = modalBody.getBoundingClientRect();
+                const fieldRect = field.getBoundingClientRect();
+                const dropdownHeight = dropdown.scrollHeight;
+                const gutter = 8;
+                const spaceBelow = Math.max(0, bodyRect.bottom - fieldRect.bottom - gutter);
+                const spaceAbove = Math.max(0, fieldRect.top - bodyRect.top - gutter);
+                const shouldOpenUp = dropdownHeight > spaceBelow && spaceAbove > spaceBelow;
+                dropdown.classList.toggle('ingredient-dropdown--above', shouldOpenUp);
+                const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
+                if (availableSpace > 0) {
+                    dropdown.style.maxHeight = `${Math.min(dropdownHeight, availableSpace)}px`;
+                } else {
+                    dropdown.style.maxHeight = '';
                 }
             });
+
+            const closeOnOutsideClick = (event) => {
+                if (field && !field.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('ingredient-dropdown--above');
+                    dropdown.style.maxHeight = '';
+                    document.removeEventListener('click', closeOnOutsideClick);
+                }
+            };
+
+            window.setTimeout(() => {
+                document.addEventListener('click', closeOnOutsideClick);
+            }, 0);
         }
 
         function openAddIngredientModal(value, input, index) {
@@ -625,13 +965,14 @@
             const nameInput = document.getElementById('new-ingredient-name');
             const form = document.getElementById('add-ingredient-form');
             nameInput.value = value;
-            form.dataset.input = input;
+            form.currentIngredientInput = input;
             form.dataset.index = index;
-            modal.style.display = 'block';
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         }
 
         function openEditModal(drink) {
-            fetch(`/recipe/${drink}`)
+            fetch(`/recipe/${encodeURIComponent(drink)}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -639,7 +980,11 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('edit-modal').style.display = 'block';
+                    const editModal = document.getElementById('edit-modal');
+                    if (editModal) {
+                        editModal.classList.remove('hidden');
+                        editModal.style.display = 'flex';
+                    }
                     document.getElementById('edit-original-drink').value = data.name || '';
                     document.getElementById('edit-drink').value = data.name || '';
                     const baseSpiritInput = document.getElementById('edit-base_spirit-input');
@@ -662,34 +1007,23 @@
 
                     if (data.ingredients && Array.isArray(data.ingredients)) {
                         data.ingredients.forEach((ing, index) => {
-                            const row = document.createElement('div');
-                            row.className = 'ingredient-row';
-
-                            const templateSelect = document.getElementById('unit-template');
-                            const select = templateSelect.cloneNode(true);
-                            select.style.display = '';
-                            select.id = '';
-                            select.name = `unit_${index}`;
-                            select.value = ing.unit || 'oz';
-
-                            row.innerHTML = `
-                                <input type="text" name="ingredient_${index}" class="ingredient-input" value="${ing.ingredient || ''}" onkeyup="filterIngredients(this, ${index})">
-                                <div class="ingredient-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
-                                <input type="text" name="quantity_${index}" value="${ing.quantity || ''}" style="width: 100px;">
-                            `;
-                            row.appendChild(select);
-
-                            const removeButton = document.createElement('button');
-                            removeButton.type = 'button';
-                            removeButton.textContent = 'Remove';
-                            removeButton.style.backgroundColor = '#ff4444';
-                            removeButton.style.color = 'white';
-                            removeButton.style.border = 'none';
-                            removeButton.style.borderRadius = '4px';
-                            removeButton.style.cursor = 'pointer';
-                            removeButton.onclick = function() { removeIngredient(this); };
-                            row.appendChild(removeButton);
-                            ingredientsList.appendChild(row);
+                            ingredientsList.insertAdjacentHTML('beforeend', makeIngredientRowMarkup(index));
+                            const row = ingredientsList.lastElementChild;
+                            if (!row) {
+                                return;
+                            }
+                            const ingredientInput = row.querySelector(`input[name="ingredient_${index}"]`);
+                            const quantityInput = row.querySelector(`input[name="quantity_${index}"]`);
+                            const unitSelect = row.querySelector(`select[name="unit_${index}"]`);
+                            if (ingredientInput) {
+                                ingredientInput.value = ing.ingredient || '';
+                            }
+                            if (quantityInput) {
+                                quantityInput.value = ing.quantity || '';
+                            }
+                            if (unitSelect) {
+                                unitSelect.value = ing.unit || 'oz';
+                            }
                             editIngredientCount = index + 1;
                         });
                     } else {
@@ -703,7 +1037,13 @@
         }
 
         function closeEditModal() {
-            document.getElementById('edit-modal').style.display = 'none';
+            const modal = document.getElementById('edit-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            const form = document.getElementById('edit-recipe-form');
+            form.reset();
+            document.getElementById('edit-ingredients-list').innerHTML = '';
+            editIngredientCount = 0;
         }
 
         function saveEdit() {
@@ -732,8 +1072,6 @@
             });
 
             const url = `/recipe/edit_recipe/${encodeURIComponent(data.original_drink)}`;
-            console.log('Sending request to:', url);
-            console.log('Payload:', JSON.stringify(data));
 
             fetch(url, {
                 method: 'POST',
@@ -741,7 +1079,6 @@
                 body: JSON.stringify(data)
             })
                 .then(response => {
-                    console.log('Response status:', response.status);
                     if (!response.ok) {
                         return response.text().then(text => {
                             throw new Error(`HTTP error! Status: ${response.status}, Response: ${text}`);
@@ -750,7 +1087,6 @@
                     return response.json();
                 })
                 .then(result => {
-                    console.log('Response data:', result);
                     if (result.success) {
                         showToast("Recipe updated successfully!");
                         closeEditModal();
@@ -789,113 +1125,146 @@
         }
 
         function closeDeleteModal() {
-            document.getElementById('delete-modal').style.display = 'none';
+            const modal = document.getElementById('delete-modal');
+            if (!modal) {
+                return;
+            }
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
         }
 
         function filterBaseSpirit(modalType) {
             const input = document.getElementById(`${modalType}-base_spirit-input`);
-            const dropdown = document.getElementById(`${modalType}-base_spirit-dropdown`);
             const select = document.getElementById(`${modalType}-base_spirit`);
+            const field = input ? input.closest('.base-spirit-field') : null;
+            const dropdown = field ? field.querySelector('.ingredient-dropdown') : null;
 
-            if (!input || !dropdown || !select) {
-                console.error(`Missing elements for ${modalType}-base_spirit:`, { input, dropdown, select });
+            if (!input || !select || !dropdown) {
+                console.error(`Missing elements for ${modalType}-base_spirit:`, { input, select, dropdown });
                 return;
             }
 
-            const inputValue = input.value.toLowerCase();
+            const rawValue = input.value.trim();
+            const value = rawValue.toLowerCase();
             dropdown.innerHTML = '';
-            dropdown.style.display = 'block';
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('ingredient-dropdown--above');
+            dropdown.style.maxHeight = '';
 
-            // Collect all options from the select
-            const options = Array.from(select.options).slice(1); // Skip the "None" option
-            const filteredOptions = options.filter(option => option.value.toLowerCase().includes(inputValue));
-
-            if (filteredOptions.length > 0) {
-                filteredOptions.forEach(option => {
-                    const div = document.createElement('div');
-                    div.textContent = option.text;
-                    div.style.padding = '5px';
-                    div.style.cursor = 'pointer';
-                    div.addEventListener('click', function() {
-                        input.value = option.value;
-                        select.value = option.value;
-                        dropdown.style.display = 'none';
-                    });
-                    dropdown.appendChild(div);
-                });
-            } else {
-                dropdown.style.display = 'none';
+            if (!value) {
+                select.value = '';
+                return;
             }
 
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', function handler(event) {
-                if (input && dropdown && event.target) {
-                    if (!input.contains(event.target) && !dropdown.contains(event.target)) {
-                        dropdown.style.display = 'none';
-                        document.removeEventListener('click', handler);
-                    }
-                } else {
-                    console.error('Invalid elements in click handler:', { input, dropdown, eventTarget: event.target });
-                    document.removeEventListener('click', handler);
-                }
+            const options = Array.from(select.options).slice(1);
+            const matches = options.filter((option) => {
+                const optionValue = option.value.toLowerCase();
+                const optionText = option.text.toLowerCase();
+                return optionValue.includes(value) || optionText.includes(value);
             });
+
+            const fragment = document.createDocumentFragment();
+
+            matches.forEach((option) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'ingredient-option';
+                button.textContent = option.text;
+                button.setAttribute('role', 'option');
+                button.addEventListener('click', () => {
+                    input.value = option.value;
+                    select.value = option.value;
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('ingredient-dropdown--above');
+                    dropdown.style.maxHeight = '';
+                });
+                fragment.appendChild(button);
+            });
+
+            if (!matches.length) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'ingredient-option-empty';
+                emptyState.textContent = 'No spirits found';
+                fragment.appendChild(emptyState);
+            }
+
+            dropdown.appendChild(fragment);
+
+            if (!dropdown.childElementCount) {
+                dropdown.classList.add('hidden');
+                dropdown.style.maxHeight = '';
+                return;
+            }
+
+            dropdown.classList.remove('hidden');
+            dropdown.scrollTop = 0;
+
+            window.requestAnimationFrame(() => {
+                const modalBody = dropdown.closest('.modal-body');
+                if (!modalBody || !field) {
+                    dropdown.style.maxHeight = '';
+                    return;
+                }
+                const fieldRect = field.getBoundingClientRect();
+                const bodyRect = modalBody.getBoundingClientRect();
+                const dropdownHeight = dropdown.scrollHeight;
+                const gutter = 8;
+                const spaceBelow = Math.max(0, bodyRect.bottom - fieldRect.bottom - gutter);
+                const spaceAbove = Math.max(0, fieldRect.top - bodyRect.top - gutter);
+                const shouldOpenUp = dropdownHeight > spaceBelow && spaceAbove > spaceBelow;
+                dropdown.classList.toggle('ingredient-dropdown--above', shouldOpenUp);
+                const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
+                dropdown.style.maxHeight = availableSpace > 0
+                    ? `${Math.min(dropdownHeight, availableSpace)}px`
+                    : '';
+            });
+
+            const closeOnOutsideClick = (event) => {
+                if (field && !field.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    dropdown.classList.remove('ingredient-dropdown--above');
+                    dropdown.style.maxHeight = '';
+                    document.removeEventListener('click', closeOnOutsideClick);
+                }
+            };
+
+            window.setTimeout(() => {
+                document.addEventListener('click', closeOnOutsideClick);
+            }, 0);
         }
     </script>
 
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 50%;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: black;
-        }
-        .ingredient-dropdown div:hover {
-            background-color: #f0f0f0;
-        }
-
-        table {
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-            cursor: pointer;
-        }
-        th:hover {
-            background-color: #ddd;
-        }
-
-        td:hover {
-            background-color: #f09898;
-        }
-        .sort-arrow {
-            margin-left: 5px;
-        }
-    </style>
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

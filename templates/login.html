@@ -1,84 +1,67 @@
 {% extends "base.html" %}
 
 {% block content %}
+    <div class="flex min-h-[70vh] items-center justify-center px-4 py-12">
+        <div class="flex w-full max-w-xl flex-col items-center gap-8">
+            <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="w-40 select-none" />
 
-<!-- Centered login form layout -->
-<div class="flex flex-col items-center justify-center min-h-[75vh] px-4">
-    <!-- App logo -->
-    <img src="{{ url_for('static', filename='images/from_the_shelf_logo.png') }}" alt="From the Shelf Logo" class="mx-auto w-80 h-auto">
+            <div class="w-full rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl">
+                <div class="border-b border-border bg-background-dark px-6 py-4">
+                    <h2 class="text-xl font-semibold">Login</h2>
+                    <p class="text-sm text-text-muted">Enter your credentials to continue.</p>
+                </div>
+                <form method="post" class="space-y-5 px-6 py-6">
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Username</span>
+                        <input type="text" name="username" required class="modal-input" />
+                    </label>
 
-    <!-- Login form -->
-    <form method="post" class="bg-white shadow-md rounded px-8 py-6 w-full max-w-sm">
-        <!-- Username input -->
-        <div class="mb-4">
-            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username:</label>
-            <input type="text" name="username" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200">
-        </div>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Password</span>
+                        <div class="relative">
+                            <input type="password" name="password" id="password-input" required class="modal-input pr-10" />
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 flex items-center px-3 text-text-muted hover:text-text-normal" aria-label="Toggle password visibility">
+                                <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="size-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                                <svg id="eye-off-icon" xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.37 7.244 19.5 12 19.5c.993 0 1.956-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.13 10.065 7.5a10.523 10.523 0 0 1-4.293 5.368M6.228 6.228 3 3m3.228 3.228 11.544 11.544M9.88 9.88a3 3 0 0 0 4.24 4.24" />
+                                </svg>
+                            </button>
+                        </div>
+                    </label>
 
-        <!-- Password input with toggle visibility button -->
-        <div class="mb-6">
-            <div class="relative">
-                <!-- Password field -->
-                <input type="password" name="password" id="password-input" required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200 pr-10">
+                    {% if get_flashed_messages() %}
+                    <p class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                        {{ get_flashed_messages()[0] }}
+                    </p>
+                    {% endif %}
 
-                <!-- Show/hide password button, absolutely positioned inside the input -->
-                <button type="button" onclick="togglePassword()" 
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                    id="toggle-password">
-
-                    <!-- Eye (open) icon — shown when password is visible -->
-                    <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 hidden" fill="none" 
-                            viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 
-                                4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-
-                    <!-- Eye (closed) icon — shown when password is hidden -->
-                    <svg id="eye-off-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" 
-                            stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.269-2.943-9.543-7a10.04 10.04 0 012.293-3.95m3.182-2.255A9.964 
-                                9.964 0 0112 5c4.478 0 8.269 2.943 9.543 7a9.976 9.976 0 01-4.307 5.033M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 3l18 18" />
-                    </svg>
-                </button>
+                    <div class="flex justify-end">
+                        <button type="submit" class="modal-button-primary w-full sm:w-auto">
+                            Login
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
+    </div>
 
-        <!-- Submit/login button -->
-        <button type="submit"
-            class="w-full bg-yellow-900 text-white px-4 py-2 rounded hover:ring-4 hover:ring-orange-300 transition">
-            Login
-        </button>
-
-        <!-- Display error message if login failed -->
-        {% if get_flashed_messages() %}
-            <p class="mt-4 text-red-600 text-sm text-center">{{ get_flashed_messages()[0] }}</p>
-        {% endif %}
-    </form>
-</div>
-
-<!-- Password visibility toggle script -->
-<script>
-function togglePassword() {
-    const passwordInput = document.getElementById('password-input');
-    const eyeIcon = document.getElementById('eye-icon');         // eye (open)
-    const eyeOffIcon = document.getElementById('eye-off-icon');  // eye (closed)
-
-    // Toggle the password input type
-    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-
-    // Based on new visibility, show/hide the correct icon
-    const isVisible = passwordInput.type === 'text';
-    eyeIcon.classList.toggle('hidden', !isVisible);     // Show open eye when visible
-    eyeOffIcon.classList.toggle('hidden', isVisible);   // Show closed eye when hidden
-}
-</script>
-
+    <script>
+        document.getElementById('toggle-password')?.addEventListener('click', () => {
+            const input = document.getElementById('password-input');
+            if (!input) {
+                return;
+            }
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeOffIcon = document.getElementById('eye-off-icon');
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            if (eyeIcon && eyeOffIcon) {
+                eyeIcon.classList.toggle('hidden', !isHidden);
+                eyeOffIcon.classList.toggle('hidden', isHidden);
+            }
+        });
+    </script>
 {% endblock %}

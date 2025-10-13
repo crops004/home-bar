@@ -4,11 +4,7 @@
     
     {% with messages = get_flashed_messages() %}
     {% if messages %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            showToast("{{ messages[0] | escape }}");
-        });
-    </script>
+        <div class="hidden" data-toast-message="{{ messages[0] | escape }}" aria-hidden="true"></div>
     {% endif %}
     {% endwith %}
 
@@ -67,499 +63,222 @@
         </div>
     </div>
 
-    <!-- Combined Table -->
-    <!-- Simulated Sticky Header -->
-    <div class="sticky top-[241px] z-40 bg-background-dark px-4 font-semibold text-[.65rem] sm:text-xs">
-        <div class="grid grid-cols-4 w-full text-text-muted uppercase border-b border-border-muted">
-            <div class="px-2 py-2 cursor-default" data-col="0" onclick="sortTable('bar-items-table', 0, this)">Name</div>
-            <div class="px-2 py-2 cursor-default" data-col="1" onclick="sortTable('bar-items-table', 1, this)">Category</div>
-            <div class="px-2 py-2 cursor-default" data-col="2" onclick="sortTable('bar-items-table', 2, this)">Sub Category</div>
-            <div class="px-2 py-2 text-right"></div>
-        </div>
-    </div>
     {% if items %}
-    <!-- Full Table -->
-    <div class="overflow-x-auto rounded shadow-md mb-4 px-4">
-        <table id="bar-items-table" class="w-full table-fixed bg-background-dark text-left text-[.65rem] sm:text-xs">
-            <tbody>
-                {% for item in items %}
-                    <tr class="hover:bg-background-mid border-b border-border-muted bar-row"
-                        data-category="{{ item['category'] }}"
-                        data-subcategory="{{ item['sub_category'] }}"
-                        data-type="{{ item['type'] }}">
-                        <td class="px-2 py-2">{{ item['name'] }}</td>
-                        <td class="px-2 py-2">{{ item['category'] }}</td>
-                        <td class="px-2 py-2">{{ item['sub_category'] or '' }}</td>
-                        <td class="px-2 py-2 text-right">
-                            <button 
-                                class="delete-item text-red-500 hover:text-red-700"
-                                data-name="{{ item['name'] }}"
-                                title="Delete">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
-                                    <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 
-                                            1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </td>
-                    </tr>
+    {% set grouped_items = items | sort(attribute='category') | groupby('category') %}
+    <div id="bar-accordion" class="mt-6 space-y-4 px-4">
+        {% for group in grouped_items %}
+        {% set category = group.grouper or 'Uncategorized' %}
+        {% set panel_id = 'bar-section-' ~ loop.index %}
+        {% set item_count = group.list | length %}
+        <section class="bar-category rounded-2xl border border-border bg-background-mid shadow-lg" data-category="{{ category }}">
+            <button
+                type="button"
+                class="bar-category-toggle flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-background-dark/80"
+                data-target="{{ panel_id }}"
+                aria-expanded="true"
+            >
+                <div class="flex flex-col">
+                    <span class="text-xs uppercase tracking-wide text-text-muted">Category</span>
+                    <span class="text-lg font-semibold text-text-normal">{{ category }}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="bar-category-count rounded-full bg-background-dark px-3 py-1 text-xs text-text-muted">{{ item_count }} item{% if item_count != 1 %}s{% endif %}</span>
+                    <svg class="size-4 text-text-muted transition-transform" data-chevron aria-hidden="true" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 0 1 1.414 0L10 10.586l3.293-3.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </button>
+            <div id="{{ panel_id }}" class="bar-category-panel divide-y divide-border bg-background-dark">
+                <div class="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 px-4 py-2 text-xs uppercase tracking-wide text-text-muted">
+                    <span>Name</span>
+                    <span>Subcategory</span>
+                    <span class="text-right">Actions</span>
+                </div>
+                {% for item in group.list | sort(attribute='name') %}
+                <div
+                    class="bar-row grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-sm transition hover:bg-background-mid/60"
+                    data-name="{{ item['name'] }}"
+                    data-category="{{ item['category'] or '' }}"
+                    data-subcategory="{{ item['sub_category'] or '' }}"
+                    data-type="{{ item['type'] }}"
+                >
+                    <div class="font-medium text-text-normal">{{ item['name'] }}</div>
+                    <div class="hidden sm:block text-text-muted">{{ item['sub_category'] or '—' }}</div>
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <span class="sm:hidden text-xs text-text-muted">{{ item['category'] or 'Uncategorized' }}{% if item['sub_category'] %} • {{ item['sub_category'] }}{% endif %}</span>
+                        <button 
+                            class="delete-item inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition"
+                            data-name="{{ item['name'] }}"
+                            title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
+                                <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="sm:hidden">Delete</span>
+                        </button>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </section>
+        {% endfor %}
     </div>
+    <p id="bar-no-results" class="hidden px-4 py-6 text-center text-text-muted">No items match your current filters.</p>
     {% else %}
-        <p>No matching items in your bar.</p>
+        <p class="px-4 py-6 text-center text-text-muted">You have not added anything to your bar yet. Use the + button above to get started.</p>
     {% endif %}
     
     <!-- Add Item Modal -->
-    <div id="add-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity duration-200">
-        <div class="modal-box bg-white p-6 rounded shadow-lg w-[90%] max-w-md relative transform scale-95 opacity-0 transition-all duration-200">
-            <button onclick="closeAddModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">&times;</button>
-            <h2 class="text-lg font-semibold mb-2">Add to Bar</h2>
-            <form method="post" onsubmit="return submitWithFields(event)">
-                <label for="name">Name: </label>
-                <input type="text" id="name-input" placeholder=" Start typing to filter..." onkeyup="filterDropdown()" required>
-                <select id="name" name="name" style="display: none;" required onchange="updateFields()">
-                    <option value="">Select an ingredient</option>
-                    {% for name in possible_names %}
-                        <option value="{{ name }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
-                <div id="name-dropdown" style="display: none; border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
+    <div id="add-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center px-4 transition-opacity duration-200">
+        <div class="modal-box relative w-full max-w-lg transform scale-95 opacity-0 transition-all duration-200 rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl">
+            <button onclick="closeAddModal()" class="absolute top-3 right-3 text-text-muted hover:text-logo transition-colors" aria-label="Close">
+                &times;
+            </button>
+            <h2 class="text-xl font-semibold mb-4">Add to Bar</h2>
+            <form method="post" class="space-y-4" onsubmit="return submitWithFields(event)">
+                <div class="space-y-2">
+                    <label for="name-input" class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Ingredient</label>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="name-input"
+                            placeholder="Start typing to filter..."
+                            onkeyup="filterDropdown()"
+                            required
+                            class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo placeholder:text-text-muted transition"
+                        >
+                        <select id="name" name="name" class="hidden" required onchange="updateFields()">
+                            <option value="">Select an ingredient</option>
+                            {% for name in possible_names %}
+                                <option value="{{ name }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div
+                            id="name-dropdown"
+                            class="absolute left-0 right-0 mt-1 hidden border border-border bg-background-light text-text-normal rounded-lg shadow-xl max-h-48 overflow-y-auto z-20"
+                            role="listbox"
+                        ></div>
+                    </div>
+                </div>
 
-                <!-- Hidden inputs -->
                 <input type="hidden" id="category" name="category" required>
                 <input type="hidden" id="sub_category" name="sub_category">
 
-                <button type="button" onclick="clearIngredientFields()" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform text-white" title="Clear">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
-                        <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 
-                                1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 
-                                15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 
-                                1.5.058l.345-9Z" clip-rule="evenodd" />
-                    </svg>
-                </button>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <button type="button" id="new-ingredient-trigger" class="hidden flex items-center gap-2 rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition" title="Add new ingredient to master list" onclick="openNewIngredientModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Add New Ingredient
+                    </button>
 
-                <button type="submit" class="bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Add Bar Item">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                </button>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="clearIngredientFields()" class="flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-text-normal hover:bg-background-light transition" title="Clear current selection">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                                <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                            </svg>
+                            Clear
+                        </button>
+
+                        <button type="submit" class="flex items-center gap-2 rounded-full bg-logo px-4 py-2 text-light-text-normal hover:ring-2 hover:ring-logo transition" title="Add Bar Item">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3>Confirm Deletion</h3>
-            <p id="delete-modal-message"></p>
-            <button id="confirm-delete" style="background-color: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Confirm</button>
-            <button id="cancel-delete" style="background-color: #ccc; color: black; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cancel</button>
+    <div id="delete-modal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50 px-4">
+        <div class="w-full max-w-sm rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl p-6 text-center space-y-4">
+            <h3 class="text-xl font-semibold">Confirm Deletion</h3>
+            <p id="delete-modal-message" class="text-text-muted"></p>
+            <div class="flex items-center justify-center gap-3">
+                <button id="confirm-delete" class="rounded-full bg-red-600 px-4 py-2 text-white hover:bg-red-500 transition">Confirm</button>
+                <button id="cancel-delete" class="rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition">Cancel</button>
+            </div>
         </div>
     </div>
     
     <!-- Filter Modal -->
-    <div id="filter-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 items-center justify-center z-50 transition-opacity duration-200">
-        <div class="absolute top-20 right-4 left-4 sm:left-auto sm:right-6 sm:w-[20rem] bg-white p-4 rounded shadow-md transition-all duration-200 modal-box opacity-0 translate-y-[-0.5rem]">
-            <button onclick="closeFilterModal()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">&times;</button>
-            <h2 class="text-lg font-semibold mb-2">Filter All Items</h2>
-            <input type="text" id="filter-all" placeholder="Filter by name, category, or subcategory..."
+    <div id="filter-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-start justify-center px-4 py-20 transition-opacity duration-200">
+        <div class="modal-box relative w-full max-w-md rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl transition-all duration-200 opacity-0 translate-y-[-0.5rem]">
+            <button onclick="closeFilterModal()" class="absolute top-3 right-3 text-text-muted hover:text-logo transition-colors" aria-label="Close">
+                &times;
+            </button>
+            <h2 class="text-lg font-semibold mb-4">Filter All Items</h2>
+            <input
+                type="text"
+                id="filter-all"
+                placeholder="Filter by name, category, or subcategory..."
                 onkeyup="filterAllTables()"
-                class="w-full border px-3 py-2 rounded" />
+                class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo placeholder:text-text-muted transition"
+            />
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" onclick="closeFilterModal()" class="rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 
-    <script>
-        // Open Add Modal and focus the first input
-        function openAddModal() {
-            const modal = document.getElementById('add-modal');
-            const box = modal.querySelector('.modal-box');
-            modal.classList.remove('hidden');
+    <!-- New Ingredient Modal -->
+    <div id="new-ingredient-modal" data-subcategories='{{ lists["subcategories"] | tojson }}' class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4 transition-opacity duration-200">
+        <div class="modal-box relative w-full max-w-lg transform scale-95 opacity-0 transition-all duration-200 rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl">
+            <button onclick="closeNewIngredientModal()" class="absolute top-3 right-3 text-text-muted hover:text-logo transition-colors" aria-label="Close">
+                &times;
+            </button>
+            <h2 class="text-xl font-semibold mb-4">Add New Ingredient</h2>
+            <form id="new-ingredient-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label for="new-ingredient-name" class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Name</label>
+                    <input
+                        type="text"
+                        id="new-ingredient-name"
+                        required
+                        class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo placeholder:text-text-muted transition"
+                    />
+                </div>
+                <div class="space-y-2">
+                    <label for="new-ingredient-category" class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Category</label>
+                    <select
+                        id="new-ingredient-category"
+                        required
+                        class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo transition"
+                    >
+                        <option value="">Select a category</option>
+                        {% for category in lists['categories'] %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2 hidden" id="new-subcategory-wrapper">
+                    <label for="new-ingredient-subcategory" class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Subcategory (optional)</label>
+                    <select
+                        id="new-ingredient-subcategory"
+                        class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo transition"
+                    >
+                        <option value="">Select a subcategory</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeNewIngredientModal()" class="rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="rounded-full bg-logo px-4 py-2 text-light-text-normal hover:ring-2 hover:ring-logo transition">
+                        Save Ingredient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            // Animate in
-            requestAnimationFrame(() => {
-                box.classList.remove('opacity-0', 'scale-95');
-                box.classList.add('opacity-100', 'scale-100');
-            });
+{% endblock %}
 
-            setTimeout(() => {
-                document.getElementById('name-input').focus();
-            }, 10);
-        }
-
-        // Open Filter Modal and focus the input
-        function openFilterModal() {
-            const modal = document.getElementById('filter-modal');
-            const box = modal.querySelector('.modal-box');
-            modal.classList.remove('hidden');
-
-            // Force reflow to enable transition
-            void box.offsetWidth;
-
-            box.classList.remove('opacity-0', 'translate-y-[-0.5rem]');
-            box.classList.add('opacity-100', 'translate-y-0');
-
-            setTimeout(() => {
-                document.getElementById('filter-all').focus();
-            }, 10);
-        }
-
-        function closeAddModal() {
-            const modal = document.getElementById('add-modal');
-            const box = modal.querySelector('.modal-box');
-
-            box.classList.remove('opacity-100', 'scale-100');
-            box.classList.add('opacity-0', 'scale-95');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200); // Match transition duration
-        }
-
-        function closeFilterModal() {
-            const modal = document.getElementById('filter-modal');
-            const box = modal.querySelector('.modal-box');
-
-            box.classList.remove('opacity-100', 'scale-100');
-            box.classList.add('opacity-0', 'scale-95');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
-        }
-
-        // Close modals on Escape key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeAddModal();
-                closeFilterModal();
-            }
-        });
-
-        // Close modal when clicking outside modal box
-        document.addEventListener('click', function(event) {
-            const addModal = document.getElementById('add-modal');
-            const filterModal = document.getElementById('filter-modal');
-
-            if (addModal && !addModal.classList.contains('hidden') && event.target === addModal) {
-                closeAddModal();
-            }
-
-            if (filterModal && !filterModal.classList.contains('hidden') && event.target === filterModal) {
-                closeFilterModal();
-            }
-        });
-
-        function clearFilter() {
-            const input = document.getElementById('filter-all');
-            input.value = '';
-            filterAllTables(); // triggers reset logic
-            document.getElementById('clear-filter-btn').classList.add('hidden');
-        }
-
-        // Submit form with ingredient details
-        async function submitWithFields(event) {
-            event.preventDefault(); // stop form from submitting right away
-
-            const name = document.getElementById('name').value;
-            const categoryInput = document.getElementById('category');
-            const subCategoryInput = document.getElementById('sub_category');
-
-            // Clear previous values
-            categoryInput.value = '';
-            subCategoryInput.value = '';
-
-            if (name) {
-                try {
-                    const response = await fetch(`/ingredient-details/${encodeURIComponent(name)}`);
-                    const data = await response.json();
-
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-
-                    if (data.category) categoryInput.value = data.category;
-                    if (data.sub_category) subCategoryInput.value = data.sub_category;
-
-                    event.target.submit(); // ✅ now that everything is filled in, submit the form
-
-                } catch (err) {
-                    console.error("Error fetching ingredient details:", err);
-                    alert("There was a problem adding the item.");
-                }
-            } else {
-                alert("Please select a valid item.");
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            let itemToDelete = null;
-
-            // Handle delete button clicks
-            const deleteButtons = document.querySelectorAll('.delete-item');
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    itemToDelete = this.getAttribute('data-name');
-                    const modal = document.getElementById('delete-modal');
-                    const message = document.getElementById('delete-modal-message');
-                    message.textContent = `Are you sure you want to delete ${itemToDelete} from your bar?`;
-                    modal.style.display = 'block';
-                });
-            });
-
-            // Confirm deletion
-            document.getElementById('confirm-delete').addEventListener('click', function() {
-                if (itemToDelete) {
-                    fetch(`/bar/delete_bar_item/${itemToDelete}`, {
-                        method: 'DELETE'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Close the modal and refresh the page
-                        document.getElementById('delete-modal').style.display = 'none';
-                        location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error deleting item:', error);
-                        alert('Error deleting item.');
-                        document.getElementById('delete-modal').style.display = 'none';
-                    });
-                }
-            });
-
-            // Cancel deletion
-            document.getElementById('cancel-delete').addEventListener('click', function() {
-                document.getElementById('delete-modal').style.display = 'none';
-                itemToDelete = null;
-            });
-
-            // Filter dropdown as user types
-            window.filterDropdown = function() {
-                const inputEl = document.getElementById('name-input');
-                const input = inputEl.value.toLowerCase();
-                const select = document.getElementById('name');
-                const dropdown = document.getElementById('name-dropdown');
-                const categoryFields = document.getElementById('category-fields');
-
-                dropdown.innerHTML = '';
-
-                if (input === '') {
-                    dropdown.style.display = 'none';
-                    select.value = '';
-                    // Clear and hide category fields
-                    document.getElementById('category').value = '';
-                    document.getElementById('sub_category').value = '';
-                    categoryFields.style.display = 'none';
-                    return;
-                }
-
-                dropdown.style.display = 'block';
-                const options = Array.from(select.options).slice(1); // Skip the "Select an ingredient" option
-                const filteredOptions = options.filter(option => option.value.toLowerCase().includes(input));
-
-                if (filteredOptions.length > 0) {
-                    filteredOptions.forEach(option => {
-                        const div = document.createElement('div');
-                        div.textContent = option.value;
-                        div.style.padding = '5px';
-                        div.style.cursor = 'pointer';
-                        div.addEventListener('click', function() {
-                            document.getElementById('name-input').value = option.value;
-                            select.value = option.value;
-                            dropdown.style.display = 'none';
-                            updateFields();  // fill category/subcategory + show fields if needed
-                        });
-                        dropdown.appendChild(div);
-                    });
-                } else {
-                    dropdown.style.display = 'none';
-                }
-            };
-            
-            // Clear ingredient fields
-            window.clearIngredientFields = function() {
-                document.getElementById('name-input').value = '';
-                document.getElementById('name').value = '';
-                document.getElementById('category').value = '';
-                document.getElementById('sub_category').value = '';
-                document.getElementById('category-fields').style.display = 'none';
-                document.getElementById('name-dropdown').style.display = 'none';
-            };
-
-            // Autofill category and sub_category fields
-            window.updateFields = function () {
-                const name = document.getElementById('name').value;
-                const categoryInput = document.getElementById('category');
-                const subCategoryInput = document.getElementById('sub_category');
-                const categoryFields = document.getElementById('category-fields');
-
-                // Always reset
-                categoryFields.style.display = 'none';
-                categoryInput.value = '';
-                subCategoryInput.value = '';
-                categoryInput.parentElement.style.display = 'none';
-                subCategoryInput.parentElement.style.display = 'none';
-
-                if (name) {
-                    fetch(`/ingredient-details/${encodeURIComponent(name)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                alert(data.error);
-                            } else {
-                                const hasCategory = !!data.category;
-                                const hasSubCategory = !!data.sub_category;
-
-                                if (hasCategory || hasSubCategory) {
-                                    categoryFields.style.display = 'block';
-                                }
-
-                                if (hasCategory) {
-                                    categoryInput.value = data.category;
-                                    categoryInput.parentElement.style.display = 'inline-block';
-                                }
-
-                                if (hasSubCategory) {
-                                    subCategoryInput.value = data.sub_category;
-                                    subCategoryInput.parentElement.style.display = 'inline-block';
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching ingredient details:', error);
-                        });
-                }
-            };
-
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                const dropdown = document.getElementById('name-dropdown');
-                const input = document.getElementById('name-input');
-                if (!input.contains(event.target) && !dropdown.contains(event.target)) {
-                    dropdown.style.display = 'none';
-                }
-            });
-
-            // Sorting function
-            window.sortTable = function(tableId, colIndex, headerDiv) {
-                const table = document.getElementById(tableId);
-                const tbody = table.querySelector('tbody');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                
-                // Determine direction from data attribute
-                const current = headerDiv.getAttribute('data-sort') || 'none';
-                const newDirection = current === 'asc' ? 'desc' : 'asc';
-                
-                // Clear sort state from all header divs
-                const headers = headerDiv.parentElement.querySelectorAll('div[data-col]');
-                headers.forEach(h => h.removeAttribute('data-sort'));
-
-                // Set the new direction on the clicked header
-                headerDiv.setAttribute('data-sort', newDirection);
-
-                rows.sort((a, b) => {
-                    const cellA = a.children[colIndex].textContent.trim().toLowerCase();
-                    const cellB = b.children[colIndex].textContent.trim().toLowerCase();
-                    return newDirection === 'asc'
-                        ? cellA.localeCompare(cellB)
-                        : cellB.localeCompare(cellA);
-                });
-
-                rows.forEach(row => tbody.appendChild(row));
-            };
-
-            // Attach click listener to all filter buttons
-            document.querySelectorAll('.filter-btn').forEach(button => {
-                button.addEventListener('click', () => {
-                    const filter = button.dataset.filter;
-                    filterTable(filter);
-                });
-            });
-
-            // Filter table rows based on the selected filter
-            window.filterTable = function(filter) {
-                const rows = document.querySelectorAll('.bar-row');
-                const normalizedFilter = filter.toLowerCase();
-
-                // Highlight active button
-                const buttons = document.querySelectorAll('.filter-btn');
-                buttons.forEach(btn => btn.classList.remove('bg-background-mid', 'text-logo'));
-                const active = Array.from(buttons).find(btn => btn.dataset.filter === normalizedFilter);
-                if (active) {
-                    active.classList.add('bg-background-mid', 'text-logo');
-                }
-
-                rows.forEach(row => {
-                    const category = (row.dataset.category || '').toLowerCase();
-                    const subcategory = (row.dataset.subcategory || '').toLowerCase();
-                    const type = (row.dataset.type || '');
-
-                    let match = false;
-
-                    if (normalizedFilter === 'all') {
-                        match = true;
-                    } else if (normalizedFilter === 'spirit') {
-                        match = type === 'spirit';
-                    } else if (normalizedFilter === 'modifier') {
-                        match = type === 'modifier';
-                    } else {
-                        match = category === normalizedFilter || subcategory === normalizedFilter;
-                    }
-
-                    row.style.display = match ? '' : 'none';
-                });
-            };
-
-            window.filterAllTables = function() {
-                const filterValue = document.getElementById('filter-all').value.toLowerCase();
-                const clearButton = document.getElementById('clear-filter-btn');
-
-                // Show or hide clear button
-                if (filterValue.trim() !== '') {
-                    clearButton.classList.remove('hidden');
-                } else {
-                    clearButton.classList.add('hidden');
-                }
-
-                const tables = ['other-items-table', 'spirits-table'];
-
-                tables.forEach(tableId => {
-                    const table = document.getElementById(tableId);
-                    const noItemsDivId = tableId === 'other-items-table' ? 'misc-no-items' : 'spirits-no-items';
-                    const noItemsDiv = document.getElementById(noItemsDivId);
-
-                    if (!table) return;
-
-                    const tbody = table.getElementsByTagName('tbody')[0];
-                    const rows = tbody.getElementsByTagName('tr');
-                    let hasVisibleRows = false;
-
-                    for (let i = 0; i < rows.length; i++) {
-                        const name = rows[i].cells[0].textContent.toLowerCase();
-                        const category = rows[i].cells[1].textContent.toLowerCase();
-                        const subcategory = rows[i].cells[2].textContent.toLowerCase();
-
-                        const matches = name.includes(filterValue) ||
-                                        category.includes(filterValue) ||
-                                        subcategory.includes(filterValue);
-
-                        if (matches) {
-                            rows[i].style.display = '';
-                            hasVisibleRows = true;
-                        } else {
-                            rows[i].style.display = 'none';
-                        }
-                    }
-
-                    if (noItemsDiv) {
-                        noItemsDiv.style.display = (rows.length > 0 && !hasVisibleRows) ? 'block' : 'none';
-                    }
-                });
-            };
-
-            // Initial call to filterAllTables to handle any pre-filled filter values
-            filterAllTables();
-        });
-    </script>
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/bar.js') }}" defer></script>
 {% endblock %}
