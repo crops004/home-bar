@@ -24,10 +24,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 2v4"/></svg>
                 <span>Recipes</span>
             </a>
-            <a href="{{ url_for('drink_maker.drink_maker') }}" class="flex flex-col items-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M10 14h4"/></svg>
-                <span>Mix</span>
-            </a>
             <a href="{{ url_for('manage_lists') }}" class="flex flex-col items-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
                 <span>Gear</span>
@@ -45,8 +41,7 @@
                 </a>
                 <a href="{{ url_for('bar.bar') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'bar.bar' %}text-logo{% endif %}">Bar</a>
                 <a href="{{ url_for('recipes.recipes') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'recipes.recipes' %}text-logo{% endif %}">Recipes</a>
-                <a href="{{ url_for('drink_maker.drink_maker') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'drink_maker.drink_maker' %}text-logo{% endif %}">Mix!</a>
- 
+
             </div>
         </nav>
 
@@ -65,7 +60,7 @@
     </div>
 
     <!-- Main content that fills available space -->
-    <main class="flex-grow">
+    <main class="flex-grow pb-24 sm:pb-0">
         {% block content %}{% endblock %}
     </main>
 
@@ -74,10 +69,12 @@
 
     </footer>
 
+    {% if SHOW_VIEWPORT_DEBUG %}
     <!-- Viewport debug -->
     <div class="fixed bottom-0 right-0 bg-black text-white text-xs px-2 py-1 z-50">
         <span id="width"></span>px wide × <span id="height"></span>px tall
     </div>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
     {% block scripts %}{% endblock %}

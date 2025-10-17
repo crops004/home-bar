@@ -13,3 +13,4 @@ class Config:
     TEMPLATES_AUTO_RELOAD = True
     FLASK_DEV = os.getenv("FLASK_DEV", "false").lower() == "true"
     AUTO_OPEN_BROWSER = os.getenv("FLASK_AUTO_OPEN_BROWSER", "false").lower() == "true"
+    SHOW_VIEWPORT_DEBUG = os.getenv("SHOW_VIEWPORT_DEBUG", "false").lower() == "true"

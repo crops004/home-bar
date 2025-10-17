@@ -760,6 +760,16 @@
           chevron.style.transform = expanded ? "" : "rotate(180deg)";
         }
       });
+      const targetId = button.dataset.target;
+      const panel = targetId ? document.getElementById(targetId) : null;
+      if (panel) {
+        button.setAttribute("aria-expanded", "false");
+        panel.classList.add("hidden");
+        const chevron = button.querySelector("[data-chevron]");
+        if (chevron) {
+          chevron.style.transform = "";
+        }
+      }
     });
   }
 

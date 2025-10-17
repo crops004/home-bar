@@ -1,7 +1,9 @@
 from collections import defaultdict
 
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, current_app
+
 from utils import get_db_connection, load_lists, close_db_connection
+from helpers import get_drinks_can_make
 
 recipes_bp = Blueprint('recipes', __name__)
 
@@ -97,7 +99,9 @@ def recipes():
         }
 
         spirits_by_recipe = defaultdict(list)
+        ingredients_by_recipe = defaultdict(list)
         seen_spirits = defaultdict(set)
+        seen_ingredients = defaultdict(set)
         ingredient_rows = conn.execute(
             'SELECT drink, ingredient FROM RecipeIngredients ORDER BY rowid'
         ).fetchall()
@@ -106,6 +110,9 @@ def recipes():
             ingredient_name = (row['ingredient'] or '').strip()
             if not ingredient_name:
                 continue
+            if ingredient_name not in seen_ingredients[drink]:
+                ingredients_by_recipe[drink].append(ingredient_name)
+                seen_ingredients[drink].add(ingredient_name)
             info = possible_lookup.get(ingredient_name.lower())
             category = (info.get('category') if info else '') or ''
             sub_category = (info.get('sub_category') if info else '') or ''
@@ -124,6 +131,9 @@ def recipes():
                     spirits_by_recipe[drink].append(ingredient_name)
                     seen.add(ingredient_name)
 
+        can_make_entries = get_drinks_can_make()
+        can_make_set = {entry['drink'] for entry in can_make_entries}
+
         all_recipes = []
         for row in raw_recipes:
             drink = row['drink']
@@ -132,12 +142,15 @@ def recipes():
             resolved_category = category_lookup.get(category_key, base_spirit or 'Unknown')
             resolved_category = (resolved_category or 'Unknown').strip() or 'Unknown'
             spirit_summary = ' | '.join(spirits_by_recipe.get(drink, []))
+            ingredient_summary = ' • '.join(ingredients_by_recipe.get(drink, []))
             all_recipes.append(
                 {
                     'drink': drink,
                     'base_spirit': base_spirit,
                     'base_spirit_category': resolved_category,
-                    'ingredient_summary': spirit_summary,
+                    'spirit_summary': spirit_summary,
+                    'ingredient_summary': ingredient_summary,
+                    'available': drink in can_make_set,
                 }
             )
 

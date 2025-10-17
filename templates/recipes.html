@@ -13,34 +13,33 @@
         </button>
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-4 items-end bg-background-mid/40 border border-border rounded-2xl p-4">
-        <div class="flex flex-col gap-1">
-            <label for="filter-name" class="text-xs uppercase tracking-wide text-text-muted">Search Name</label>
-            <input
-                type="text"
-                id="filter-name"
-                oninput="filterCards()"
-                placeholder="e.g. Negroni"
-                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
-            >
+    <div class="mt-6 space-y-3">
+        <div class="flex flex-wrap items-center gap-3 bg-background-mid/40 border border-border rounded-2xl p-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs uppercase tracking-wide text-text-muted">View</span>
+                <button type="button" class="view-toggle inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-view="can">Can Make</button>
+                <button type="button" class="view-toggle inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-view="all">All Recipes</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs uppercase tracking-wide text-text-muted">Base Spirit</span>
+                <button type="button" class="spirit-filter inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-spirit="all">All</button>
+                <button type="button" class="spirit-filter inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-spirit="gin">Gin</button>
+                <button type="button" class="spirit-filter inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-spirit="whiskey">Whiskey</button>
+                <button type="button" class="spirit-filter inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-spirit="rum">Rum</button>
+                <button type="button" class="spirit-filter inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition" data-spirit="tequila">Tequila</button>
+            </div>
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3 sm:ml-auto">
+                <input
+                    type="text"
+                    id="recipe-search"
+                    placeholder="Search by name or ingredient..."
+                    class="modal-input w-full sm:w-60"
+                />
+                <button type="button" id="recipe-search-clear" class="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition">
+                    Clear
+                </button>
+            </div>
         </div>
-        <div class="flex flex-col gap-1">
-            <label for="filter-spirit" class="text-xs uppercase tracking-wide text-text-muted">Base Spirit</label>
-            <input
-                type="text"
-                id="filter-spirit"
-                oninput="filterCards()"
-                placeholder="e.g. Gin"
-                class="rounded-lg border border-border bg-background-light px-3 py-2 text-sm text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
-            >
-        </div>
-        <button
-            type="button"
-            onclick="resetRecipeFilters()"
-            class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition"
-        >
-            Clear Filters
-        </button>
     </div>
 
     <!-- Recipe Cards -->
@@ -50,16 +49,32 @@
         {% set spirit = ((group.grouper or '') | trim) | default('Unknown', true) %}
         {% set spirit_key = spirit.lower() %}
         {% set group_recipes = group.list | sort(attribute='drink', case_sensitive=False) %}
-        <section class="recipe-group space-y-4" data-spirit="{{ spirit_key }}">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">{{ spirit }}</h2>
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {% set panel_id = 'recipes-section-' ~ loop.index %}
+        <section class="recipe-group rounded-2xl border border-border bg-background-mid shadow-lg" data-spirit="{{ spirit_key }}">
+            <button type="button" class="recipe-group-toggle flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-background-dark/80" data-target="{{ panel_id }}" aria-expanded="false">
+                <div class="flex flex-col">
+                    <span class="text-xs uppercase tracking-wide text-text-muted">Base Spirit</span>
+                    <span class="text-lg font-semibold text-text-normal">{{ spirit }}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="recipe-group-count rounded-full bg-background-dark px-3 py-1 text-xs text-text-muted">{{ group_recipes | length }} recipe{% if group_recipes | length != 1 %}s{% endif %}</span>
+                    <svg class="size-4 text-text-muted transition-transform" data-chevron aria-hidden="true" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 0 1 1.414 0L10 10.586l3.293-3.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </button>
+            <div id="{{ panel_id }}" class="recipe-group-panel hidden border-t border-border bg-background-dark">
+                <div class="recipe-group-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {% for recipe in group_recipes %}
                 {% set summary = (recipe.ingredient_summary | default('', true)) | trim %}
                 <article
                     class="recipe-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
                     data-drink="{{ recipe.drink|escape }}"
                     data-base-spirit="{{ recipe.base_spirit|default('', true)|escape }}"
-                    data-base-category="{{ spirit|escape }}"
+                    data-base-category="{{ recipe.base_spirit_category|default(spirit, true)|escape }}"
+                    data-spirit-summary="{{ recipe.spirit_summary|default('', true)|escape }}"
+                    data-ingredients="{{ summary|escape }}"
+                    data-available="{{ 'true' if recipe.available else 'false' }}"
                 >
                     <button
                         type="button"
@@ -69,8 +84,8 @@
                         <header class="flex justify-between items-start gap-3">
                             <h3 class="text-lg font-semibold text-text-normal truncate">{{ recipe.drink }}</h3>
                         </header>
-                        <p class="recipe-summary text-xs uppercase tracking-wide text-text-muted whitespace-nowrap overflow-hidden text-ellipsis" title="{{ summary or 'No spirits listed' }}">
-                            {{ summary or 'No spirits listed' }}
+                        <p class="recipe-summary text-xs uppercase tracking-wide text-text-muted whitespace-nowrap overflow-hidden text-ellipsis" title="{{ summary or 'No ingredients listed' }}">
+                            {{ summary or 'No ingredients listed' }}
                         </p>
                     </button>
                     <div class="recipe-card-details hidden border-t border-border bg-background-dark p-4 text-sm text-text-normal">
@@ -78,6 +93,7 @@
                     </div>
                 </article>
                 {% endfor %}
+                </div>
             </div>
         </section>
         {% endfor %}
@@ -332,6 +348,8 @@
         let currentDrink = null;
         let possibleIngredients = [];
         let allIngredientOptions = []; // Initialize as array
+        let activeView = 'can';
+        let activeSpiritFilter = 'all';
 
         const recipesDataElement = document.getElementById('recipes-data');
         const rawCategories = recipesDataElement?.dataset.categories || '[]';
@@ -438,6 +456,123 @@
             return summary;
         }
 
+        function updateViewButtons() {
+            document.querySelectorAll('.view-toggle').forEach((button) => {
+                const isActive = button.dataset.view === activeView;
+                button.classList.toggle('bg-background-light', isActive);
+                button.classList.toggle('text-text-normal', isActive);
+                button.classList.toggle('text-text-muted', !isActive);
+            });
+        }
+
+        function updateSpiritButtons() {
+            document.querySelectorAll('.spirit-filter').forEach((button) => {
+                const isActive = button.dataset.spirit === activeSpiritFilter;
+                button.classList.toggle('bg-background-light', isActive);
+                button.classList.toggle('text-text-normal', isActive);
+                button.classList.toggle('text-text-muted', !isActive);
+            });
+        }
+
+        function setActiveView(view) {
+            if (activeView === view) {
+                return;
+            }
+            activeView = view;
+            updateViewButtons();
+            applyRecipeFilters();
+        }
+
+        function setActiveSpiritFilter(filter) {
+            if (activeSpiritFilter === filter) {
+                return;
+            }
+            activeSpiritFilter = filter;
+            updateSpiritButtons();
+            applyRecipeFilters();
+        }
+
+        function applyRecipeFilters() {
+            const searchInput = document.getElementById('recipe-search');
+            const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const cards = document.querySelectorAll('.recipe-card');
+            let visibleCount = 0;
+
+            cards.forEach((card) => {
+                const drinkName = (card.dataset.drink || '').toLowerCase();
+                const baseSpirit = (card.dataset.baseSpirit || '').toLowerCase();
+                const baseCategory = (card.dataset.baseCategory || '').toLowerCase();
+                const spiritSummary = (card.dataset.spiritSummary || '').toLowerCase();
+                const ingredients = (card.dataset.ingredients || '').toLowerCase();
+                const isAvailable = card.dataset.available === 'true';
+
+                const matchesView = activeView === 'all' || isAvailable;
+                const matchesSpirit =
+                    activeSpiritFilter === 'all' ||
+                    baseSpirit.includes(activeSpiritFilter) ||
+                    baseCategory.includes(activeSpiritFilter) ||
+                    spiritSummary.includes(activeSpiritFilter);
+                const matchesSearch =
+                    !searchValue ||
+                    [drinkName, baseSpirit, baseCategory, spiritSummary, ingredients].some((value) => value.includes(searchValue));
+
+                const shouldShow = matchesView && matchesSpirit && matchesSearch;
+                card.classList.toggle('hidden', !shouldShow);
+                if (!shouldShow && activeCard === card) {
+                    collapseCard(card);
+                }
+                if (shouldShow) {
+                    visibleCount += 1;
+                }
+            });
+
+            const emptyState = document.getElementById('recipes-empty');
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', visibleCount !== 0);
+            }
+
+            document.querySelectorAll('.recipe-group').forEach((group) => {
+                const visibleCards = Array.from(group.querySelectorAll('.recipe-card')).filter((card) => !card.classList.contains('hidden'));
+                const countLabel = group.querySelector('.recipe-group-count');
+                if (countLabel) {
+                    const count = visibleCards.length;
+                    countLabel.textContent = `${count} recipe${count === 1 ? '' : 's'}`;
+                }
+                group.classList.toggle('hidden', visibleCards.length === 0);
+            });
+        }
+
+        function resetRecipeFilters() {
+            activeView = 'can';
+            activeSpiritFilter = 'all';
+            const searchInput = document.getElementById('recipe-search');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            updateViewButtons();
+            updateSpiritButtons();
+            applyRecipeFilters();
+        }
+
+        function initRecipeAccordion() {
+            document.querySelectorAll('.recipe-group-toggle').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    const panel = targetId ? document.getElementById(targetId) : null;
+                    if (!panel) {
+                        return;
+                    }
+                    const expanded = button.getAttribute('aria-expanded') === 'true';
+                    button.setAttribute('aria-expanded', String(!expanded));
+                    panel.classList.toggle('hidden', expanded);
+                    const chevron = button.querySelector('[data-chevron]');
+                    if (chevron) {
+                        chevron.style.transform = expanded ? '' : 'rotate(180deg)';
+                    }
+                });
+            });
+        }
+
         const makeIngredientRowMarkup = (index) => `
             <div class="ingredient-row flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background-light/80 px-3 py-2">
                 <div class="ingredient-field relative flex-1 min-w-[12rem]">
@@ -492,7 +627,45 @@
             });
 
             initializeRecipeCards();
-            filterCards();
+            initRecipeAccordion();
+            updateViewButtons();
+            updateSpiritButtons();
+            applyRecipeFilters();
+
+            document.querySelectorAll('.view-toggle').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const view = button.dataset.view || 'all';
+                    setActiveView(view);
+                });
+            });
+
+            document.querySelectorAll('.spirit-filter').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const filter = button.dataset.spirit || 'all';
+                    setActiveSpiritFilter(filter);
+                });
+            });
+
+            const recipeSearchInput = document.getElementById('recipe-search');
+            if (recipeSearchInput) {
+                recipeSearchInput.addEventListener('input', applyRecipeFilters);
+                recipeSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        recipeSearchInput.value = '';
+                        applyRecipeFilters();
+                    }
+                });
+            }
+
+            const recipeSearchClear = document.getElementById('recipe-search-clear');
+            if (recipeSearchClear) {
+                recipeSearchClear.addEventListener('click', () => {
+                    if (recipeSearchInput) {
+                        recipeSearchInput.value = '';
+                    }
+                    resetRecipeFilters();
+                });
+            }
 
             // Reselect the drink after edit
             const selectedDrink = sessionStorage.getItem('selectedDrink');
@@ -618,11 +791,16 @@
             const summaryLine = card.querySelector('.recipe-summary');
             if (summaryLine) {
                 const spiritIngredients = summarizeSpiritIngredients(data.ingredients || []);
-                const ingredientSummary = spiritIngredients.join(' | ');
-                const summaryText = ingredientSummary || 'No spirits listed';
+                const spiritSummary = spiritIngredients.join(' • ');
+                const ingredientNames = (data.ingredients || [])
+                    .map((ing) => ing.ingredient)
+                    .filter(Boolean);
+                const ingredientSummary = ingredientNames.join(' • ');
+                const summaryText = ingredientSummary || 'No ingredients listed';
                 summaryLine.textContent = summaryText;
                 summaryLine.title = summaryText;
-                card.dataset.spiritSummary = summaryText;
+                card.dataset.spiritSummary = spiritSummary;
+                card.dataset.ingredients = ingredientSummary;
             }
 
             const ingredientsMarkup = (data.ingredients || []).map(ing => {
@@ -753,60 +931,9 @@
                 });
             });
         }
-        window.filterCards = function() {
-            const nameInput = document.getElementById('filter-name');
-            const spiritInput = document.getElementById('filter-spirit');
-            const nameFilter = nameInput ? nameInput.value.trim().toLowerCase() : '';
-            const spiritFilter = spiritInput ? spiritInput.value.trim().toLowerCase() : '';
-
-            const cards = document.querySelectorAll('.recipe-card');
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const drinkName = (card.dataset.drink || '').toLowerCase();
-                const baseSpirit = (card.dataset.baseSpirit || '').toLowerCase();
-                const baseCategory = (card.dataset.baseCategory || '').trim().toLowerCase();
-                const matchesName = !nameFilter || drinkName.includes(nameFilter);
-                const matchesSpirit =
-                    !spiritFilter ||
-                    baseSpirit.includes(spiritFilter) ||
-                    baseCategory.includes(spiritFilter);
-                const shouldShow = matchesName && matchesSpirit;
-                card.classList.toggle('hidden', !shouldShow);
-                if (!shouldShow && activeCard === card) {
-                    collapseCard(card);
-                }
-                if (shouldShow) {
-                    visibleCount += 1;
-                }
-            });
-
-            const groups = document.querySelectorAll('.recipe-group');
-            groups.forEach((group) => {
-                const visibleCardsInGroup = Array.from(group.querySelectorAll('.recipe-card'))
-                    .filter((card) => !card.classList.contains('hidden'));
-                group.classList.toggle('hidden', visibleCardsInGroup.length === 0);
-            });
-
-            const emptyState = document.getElementById('recipes-empty');
-            if (emptyState) {
-                emptyState.classList.toggle('hidden', visibleCount !== 0);
-            }
-
-            return visibleCount;
-        };
-
-        window.resetRecipeFilters = function() {
-            const nameInput = document.getElementById('filter-name');
-            const spiritInput = document.getElementById('filter-spirit');
-            if (nameInput) {
-                nameInput.value = '';
-            }
-            if (spiritInput) {
-                spiritInput.value = '';
-            }
-            filterCards();
-        };
+        window.applyRecipeFilters = applyRecipeFilters;
+        window.filterCards = applyRecipeFilters;
+        window.resetRecipeFilters = resetRecipeFilters;
         function openAddModal() {
             const modal = document.getElementById('add-modal');
             modal.classList.remove('hidden');

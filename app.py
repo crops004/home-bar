@@ -31,6 +31,18 @@ def create_app(config_class=Config):
     def teardown_db(exception=None):
         close_db_connection(exception)
 
+    @app.context_processor
+    def inject_debug_toggle():
+        # Global flag from config
+        show_from_config = bool(current_app.config.get("SHOW_VIEWPORT_DEBUG", False))
+        # Optional per-request override via query param: ?debug=1 / true / on
+        arg = request.args.get("debug")
+        if arg is not None:
+            show = arg.lower() in {"1", "true", "on", "yes"}
+        else:
+            show = show_from_config
+        return {"SHOW_VIEWPORT_DEBUG": show}
+
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if request.method == "POST":
