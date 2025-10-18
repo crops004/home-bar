@@ -19,6 +19,7 @@
       return;
     }
 
+    modal.classList.add("flex");
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
       box.classList.remove("opacity-0", "scale-95");
@@ -37,6 +38,7 @@
       return;
     }
 
+    modal.classList.add("flex");
     modal.classList.remove("hidden");
     void box.offsetWidth; // force reflow
     box.classList.remove("opacity-0", "translate-y-[-0.5rem]");
@@ -59,6 +61,7 @@
 
     window.setTimeout(() => {
       modal.classList.add("hidden");
+      modal.classList.remove("flex");
     }, MODAL_TRANSITION_DURATION);
   }
 
@@ -74,6 +77,7 @@
 
     window.setTimeout(() => {
       modal.classList.add("hidden");
+      modal.classList.remove("flex");
     }, MODAL_TRANSITION_DURATION);
   }
 
@@ -106,6 +110,7 @@
     }
     toggleNewIngredientButton(false);
 
+    modal.classList.add("flex");
     modal.classList.remove("hidden");
     requestAnimationFrame(() => {
       box.classList.remove("opacity-0", "scale-95");
@@ -129,6 +134,7 @@
 
     window.setTimeout(() => {
       modal.classList.add("hidden");
+      modal.classList.remove("flex");
       const form = getElement("new-ingredient-form");
       form?.reset();
       const nameInput = getElement("name-input");
@@ -362,6 +368,7 @@
       return;
     }
     trigger.classList.toggle("hidden", !shouldShow);
+    trigger.classList.toggle("flex", shouldShow);
   }
 
   function ensureCategoryOption(category) {
