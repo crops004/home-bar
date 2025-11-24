@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Manage Lists{% endblock %}
 {% block content %}
+    <div class="px-4 sm:px-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-semibold text-text-normal">Manage Lists</h1>
         <p class="text-sm text-text-muted max-w-xl">Review and adjust the shared lists that power dropdowns across the site. Toggle a section to make edits, then save all changes at once.</p>
@@ -151,4 +152,5 @@
             });
         });
     </script>
+    </div>
 {% endblock %}

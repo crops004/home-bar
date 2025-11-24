@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Recipe Collection{% endblock %}
 {% block content %}
+    <div class="px-4 sm:px-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-semibold text-text-normal">Recipe Collection</h1>
         <button
@@ -1098,6 +1099,23 @@
             modal.style.display = 'flex';
         }
 
+        function closeAddIngredientModal() {
+            const modal = document.getElementById('add-ingredient-modal');
+            const form = document.getElementById('add-ingredient-form');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+            if (form) {
+                form.reset();
+                form.currentIngredientInput = null;
+            }
+            const subcatSelect = document.getElementById('new-ingredient-subcategory');
+            if (subcatSelect) {
+                subcatSelect.innerHTML = '<option value=\"\">None</option>';
+            }
+        }
+
         function openEditModal(drink) {
             fetch(`/recipe/${encodeURIComponent(drink)}`)
                 .then(response => {
@@ -1362,13 +1380,9 @@
             }, 0);
         }
     </script>
+    </div>
 
 {% endblock %}
-
-
-
-
-
 
 
 

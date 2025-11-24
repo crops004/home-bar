@@ -78,7 +78,7 @@ def create_app(config_class=Config):
 
     @app.route("/")
     def home():
-        return render_template("home.html")
+        return redirect(url_for("bar.bar"))
 
     @app.route("/subcategories/<category>")
     def get_subcategories(category):
