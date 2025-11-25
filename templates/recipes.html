@@ -762,6 +762,61 @@
 
         let activeCard = null;
 
+        const FRACTION_DENOMS = [2, 3, 4, 6, 8];
+        function formatQuantity(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            const raw = String(value).trim();
+            if (!raw) {
+                return '';
+            }
+            if (raw.includes('/')) {
+                return raw;
+            }
+            const num = Number(raw);
+            if (!Number.isFinite(num)) {
+                return raw;
+            }
+            const sign = num < 0 ? '-' : '';
+            const absVal = Math.abs(num);
+            const whole = Math.floor(absVal);
+            const frac = absVal - whole;
+
+            let best = { n: 0, d: 1, diff: 1 };
+            FRACTION_DENOMS.forEach((d) => {
+                const n = Math.round(frac * d);
+                const diff = Math.abs(frac - n / d);
+                if (diff < best.diff) {
+                    best = { n, d, diff };
+                }
+            });
+
+            let numerator = best.n;
+            let denominator = best.d;
+            if (numerator === denominator && numerator !== 0) {
+                // Roll over to the whole part if fraction rounds to 1
+                numerator = 0;
+            }
+            const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+            if (numerator && denominator) {
+                const divisor = gcd(numerator, denominator);
+                numerator /= divisor;
+                denominator /= divisor;
+            }
+
+            const parts = [];
+            const wholePart = whole + (best.n === best.d && best.n !== 0 ? 1 : 0);
+            if (wholePart) {
+                parts.push(String(wholePart));
+            }
+            if (numerator) {
+                parts.push(`${numerator}/${denominator}`);
+            }
+            const result = parts.join(' ').trim();
+            return result ? sign + result : '0';
+        }
+
         function collapseCard(card) {
             if (!card) {
                 return;
@@ -805,8 +860,15 @@
             }
 
             const ingredientsMarkup = (data.ingredients || []).map(ing => {
-                const parts = [ing.quantity, ing.unit, ing.ingredient].filter(Boolean).join(' ').trim();
-                return `<li class="flex items-start text-sm text-text-normal">${parts || 'Ingredient'}</li>`;
+                const quantity = formatQuantity(ing.quantity);
+                const amount = [quantity, ing.unit].filter(Boolean).join(' ').trim() || '—';
+                const ingredientName = ing.ingredient || 'Ingredient';
+                return `
+                    <li class="flex items-center justify-between gap-3 text-sm text-text-normal">
+                        <span class="flex-1 pr-4">${ingredientName}</span>
+                        <span class="w-20 text-right whitespace-nowrap">${amount}</span>
+                    </li>
+                `;
             }).join('');
 
             const ingredientsHtml = ingredientsMarkup || '<li class="text-sm text-text-muted">No ingredients listed.</li>';
@@ -1383,7 +1445,6 @@
     </div>
 
 {% endblock %}
-
 
 
 
