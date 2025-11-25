@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Possible Ingredients{% endblock %}
 {% block content %}
-    <div class="px-4 sm:px-6">
+    <div class="px-4 sm:px-6 pt-4 pb-24 sm:pt-0 sm:pb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-3xl font-semibold text-text-normal">Possible Ingredients</h1>
@@ -17,24 +17,30 @@
         </button>
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-4 items-end bg-background-mid/40 border border-border rounded-2xl p-4">
+    <div class="mt-6 bg-background-mid/40 border border-border rounded-2xl p-4">
         <div class="flex flex-col gap-1 w-full sm:max-w-sm">
-            <label for="ingredient-filter" class="text-xs uppercase tracking-wide text-text-muted">Search Ingredients</label>
-            <input
-                type="text"
-                id="ingredient-filter"
-                placeholder="Search by name, category, or subcategory..."
-                oninput="filterIngredientCards()"
-                class="rounded-lg border border-border bg-background-light px-3 py-2 text-base text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
-            >
+            <div class="flex items-center justify-between gap-2">
+                <label for="ingredient-filter" class="text-xs uppercase tracking-wide text-text-muted">Search Ingredients</label>
+                <button
+                    type="button"
+                    id="ingredient-filter-clear"
+                    class="text-xs font-semibold text-text-normal px-3 py-1 rounded-full border border-logo bg-background-light hover:bg-background-mid transition opacity-0 invisible pointer-events-none"
+                    onclick="resetIngredientFilter(); toggleIngredientClear();"
+                    aria-label="Clear search"
+                >
+                    Clear
+                </button>
+            </div>
+            <div class="relative w-full">
+                <input
+                    type="text"
+                    id="ingredient-filter"
+                    placeholder=" Search by name, category, or subcategory..."
+                    oninput="filterIngredientCards(); toggleIngredientClear();"
+                    class="w-full rounded-lg border border-border bg-background-light pl-3 pr-16 py-2 text-base text-text-normal focus:outline-none focus:ring-2 focus:ring-logo"
+                >
+            </div>
         </div>
-        <button
-            type="button"
-            onclick="resetIngredientFilter()"
-            class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition"
-        >
-            Clear Search
-        </button>
     </div>
 
     {% if ingredients %}
@@ -52,27 +58,29 @@
                     <h3 class="text-lg font-semibold text-text-normal truncate">{{ ingredient['name'] }}</h3>
                     <span class="text-xs text-text-muted bg-background-light px-2 py-1 rounded-full uppercase tracking-wide">{{ ingredient['category'] or 'Uncategorized' }}</span>
                 </header>
-                <p class="text-sm text-text-muted">
-                    <span class="font-medium text-text-normal">Subcategory:</span>
-                    {{ ingredient['sub_category'] or 'None' }}
-                </p>
-            </div>
-            <div class="flex items-center justify-between gap-3 border-t border-border bg-background-dark px-4 py-3">
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-logo transition"
-                    onclick="openEditModal(this)"
-                >
-                    <span class="text-base leading-none">✎</span>
-                    Edit
-                </button>
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500 transition"
-                    onclick="deleteIngredient(this)"
-                >
-                    Delete
-                </button>
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm text-text-muted">
+                        <span class="font-medium text-text-normal">Subcategory:</span>
+                        {{ ingredient['sub_category'] or 'None' }}
+                    </p>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-logo transition"
+                            onclick="openEditModal(this)"
+                        >
+                            <span class="text-base leading-none">✎</span>
+                            Edit
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500 transition"
+                            onclick="deleteIngredient(this)"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </article>
         {% endfor %}
@@ -209,6 +217,19 @@
                 modal.classList.add('hidden');
                 modal.style.display = 'none';
             }
+        }
+
+        function toggleIngredientClear() {
+            const input = document.getElementById('ingredient-filter');
+            const clearBtn = document.getElementById('ingredient-filter-clear');
+            if (!input || !clearBtn) {
+                return;
+            }
+            const hasValue = input.value.trim().length > 0;
+            clearBtn.classList.toggle('invisible', !hasValue);
+            clearBtn.classList.toggle('opacity-0', !hasValue);
+            clearBtn.classList.toggle('pointer-events-none', !hasValue);
+            clearBtn.setAttribute('aria-hidden', String(!hasValue));
         }
 
         function syncSubcategories(selectEl, targetSelectId, selectedValue = '') {
@@ -379,10 +400,12 @@
                 filterInput.value = '';
             }
             filterIngredientCards();
+            toggleIngredientClear();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             filterIngredientCards();
+            toggleIngredientClear();
         });
 
         window.openAddModal = openAddModal;

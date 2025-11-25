@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Recipe Collection{% endblock %}
 {% block content %}
-    <div class="px-4 sm:px-6">
+    <div class="px-4 sm:px-6 pt-4 sm:pt-0">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-semibold text-text-normal">Recipe Collection</h1>
         <button
@@ -67,14 +67,15 @@
             <div id="{{ panel_id }}" class="recipe-group-panel hidden border-t border-border bg-background-dark">
                 <div class="recipe-group-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {% for recipe in group_recipes %}
-                {% set summary = (recipe.ingredient_summary | default('', true)) | trim %}
+                {% set summary_spirit = (recipe.spirit_summary | default('', true)) | trim %}
+                {% set summary_ingredients = (recipe.ingredient_summary | default('', true)) | trim %}
                 <article
                     class="recipe-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
                     data-drink="{{ recipe.drink|escape }}"
                     data-base-spirit="{{ recipe.base_spirit|default('', true)|escape }}"
                     data-base-category="{{ recipe.base_spirit_category|default(spirit, true)|escape }}"
                     data-spirit-summary="{{ recipe.spirit_summary|default('', true)|escape }}"
-                    data-ingredients="{{ summary|escape }}"
+                    data-ingredients="{{ summary_ingredients|escape }}"
                     data-available="{{ 'true' if recipe.available else 'false' }}"
                 >
                     <button
@@ -85,8 +86,8 @@
                         <header class="flex justify-between items-start gap-3">
                             <h3 class="text-lg font-semibold text-text-normal truncate">{{ recipe.drink }}</h3>
                         </header>
-                        <p class="recipe-summary text-xs uppercase tracking-wide text-text-muted whitespace-nowrap overflow-hidden text-ellipsis" title="{{ summary or 'No ingredients listed' }}">
-                            {{ summary or 'No ingredients listed' }}
+                        <p class="recipe-summary text-xs uppercase tracking-wide text-text-muted whitespace-nowrap overflow-hidden text-ellipsis" title="{{ summary_spirit or 'No spirits listed' }}">
+                            {{ summary_spirit or 'No spirits listed' }}
                         </p>
                     </button>
                     <div class="recipe-card-details hidden border-t border-border bg-background-dark p-4 text-sm text-text-normal">
@@ -852,7 +853,7 @@
                     .map((ing) => ing.ingredient)
                     .filter(Boolean);
                 const ingredientSummary = ingredientNames.join(' • ');
-                const summaryText = ingredientSummary || 'No ingredients listed';
+                const summaryText = spiritSummary || ingredientSummary || 'No spirits listed';
                 summaryLine.textContent = summaryText;
                 summaryLine.title = summaryText;
                 card.dataset.spiritSummary = spiritSummary;
@@ -1445,9 +1446,6 @@
     </div>
 
 {% endblock %}
-
-
-
 
 
 

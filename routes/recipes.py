@@ -141,7 +141,7 @@ def recipes():
             category_key = base_spirit.lower()
             resolved_category = category_lookup.get(category_key, base_spirit or 'Unknown')
             resolved_category = (resolved_category or 'Unknown').strip() or 'Unknown'
-            spirit_summary = ' | '.join(spirits_by_recipe.get(drink, []))
+            spirit_summary = ' • '.join(spirits_by_recipe.get(drink, []))
             ingredient_summary = ' • '.join(ingredients_by_recipe.get(drink, []))
             all_recipes.append(
                 {

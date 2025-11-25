@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Manage Lists{% endblock %}
 {% block content %}
-    <div class="px-4 sm:px-6">
+    <div class="px-4 sm:px-6 pt-4 sm:pt-0">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-semibold text-text-normal">Manage Lists</h1>
         <p class="text-sm text-text-muted max-w-xl">Review and adjust the shared lists that power dropdowns across the site. Toggle a section to make edits, then save all changes at once.</p>
@@ -108,12 +108,17 @@
             lists.units | join(', '),
             "Units of measure for ingredients."
         ) }}
-
-        <div class="sticky bottom-20 sm:bottom-4 z-10 flex flex-wrap gap-3 justify-end rounded-2xl border border-border bg-background-dark px-4 py-3 shadow-lg">
-            <a href="{{ url_for('recipes.recipes') }}" class="modal-button-secondary">Cancel</a>
-            <button type="submit" class="modal-button-primary">Save All Changes</button>
-        </div>
     </form>
+
+    <button
+        id="lists-save-floating"
+        type="submit"
+        form="lists-form"
+        class="hidden fixed left-1/2 -translate-x-1/2 bottom-20 sm:bottom-8 z-30 rounded-full bg-logo px-6 py-3 text-sm font-semibold text-light-text-normal shadow-2xl border border-border hover:ring-2 hover:ring-logo transition"
+        aria-hidden="true"
+    >
+        Save All Changes
+    </button>
 
     <script>
         function toggleEditable(button) {
@@ -138,6 +143,12 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            const saveButton = document.getElementById("lists-save-floating");
+            const listInputs = Array.from(document.querySelectorAll(".list-input"));
+            const initialValues = new Map();
+
+            const normalizeValue = (value) => (value || "").replace(/\r\n/g, "\n").trim();
+
             document.querySelectorAll(".edit-toggle").forEach((button) => {
                 button.addEventListener("click", () => toggleEditable(button));
             });
@@ -150,6 +161,28 @@
                     }
                 });
             });
+
+            const updateSaveButtonState = () => {
+                const isDirty = listInputs.some((input) => normalizeValue(input.value) !== (initialValues.get(input) || ""));
+                if (!saveButton) {
+                    return;
+                }
+                saveButton.classList.toggle("hidden", !isDirty);
+                saveButton.disabled = !isDirty;
+                saveButton.setAttribute("aria-hidden", String(!isDirty));
+            };
+
+            listInputs.forEach((input) => {
+                const initial = normalizeValue(input.dataset.initial || input.value);
+                initialValues.set(input, initial);
+                // Align the displayed value with the stored initial to avoid indent/newline artifacts
+                if (normalizeValue(input.value) !== initial) {
+                    input.value = input.dataset.initial || input.value.trim();
+                }
+                input.addEventListener("input", updateSaveButtonState);
+            });
+
+            updateSaveButtonState();
         });
     </script>
     </div>
