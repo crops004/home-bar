@@ -14,6 +14,7 @@ from utils import get_db_connection, load_lists, close_db_connection
 from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
 from config import Config
 import sqlite3
+import os
 
 
 def create_app(config_class=Config):
@@ -236,7 +237,7 @@ def create_app(config_class=Config):
             results = conn.execute(query).fetchall()
         finally:
             close_db_connection()
-        all_options = [row[0] for row in results if row[0]]
+        all_options = [list(row.values())[0] for row in results if list(row.values())[0]]
         return jsonify(all_options)
 
     @app.route("/possible-ingredients", methods=["GET", "POST"])
