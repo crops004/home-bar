@@ -237,7 +237,12 @@ def create_app(config_class=Config):
             results = conn.execute(query).fetchall()
         finally:
             close_db_connection()
-        all_options = [list(row.values())[0] for row in results if list(row.values())[0]]
+        all_options = []
+        for row in results:
+            # Works for both sqlite3.Row and psycopg dict rows
+            first_val = row[0] if not isinstance(row, dict) else next(iter(row.values()))
+            if first_val:
+                all_options.append(first_val)
         return jsonify(all_options)
 
     @app.route("/possible-ingredients", methods=["GET", "POST"])
