@@ -58,7 +58,7 @@ def get_drinks_can_make() -> List[Dict[str, str]]:
     result = []
     for row in drinks:
         drink_name = row['drink']
-        base_spirit_raw = (row['Base_Spirit'] or '').strip()
+        base_spirit_raw = (row['base_spirit'] or '').strip()
         base_spirit = base_spirit_raw if base_spirit_raw else 'N/A'
         resolved_category = category_lookup.get(base_spirit_raw.lower() if base_spirit_raw else '', base_spirit_raw or 'Unknown')
         resolved_category = (resolved_category or 'Unknown').strip() or 'Unknown'
@@ -90,11 +90,11 @@ def _build_category_lookup(lists: Dict) -> Dict[str, str]:
 
 def _map_spirit_ingredients(conn, lists, category_lookup) -> Dict[str, List[str]]:
     """
-    Build a mapping of drink name -> list of spirit ingredient names using PossibleIngredients metadata.
+    Build a mapping of drink name -> list of spirit ingredient names using possibleingredients metadata.
     """
 
     possible_lookup = {}
-    rows = conn.execute('SELECT name, category, sub_category FROM PossibleIngredients').fetchall()
+    rows = conn.execute('SELECT name, category, sub_category FROM possibleingredients').fetchall()
     for row in rows:
         name = (row['name'] or '').strip()
         if not name:
@@ -108,7 +108,7 @@ def _map_spirit_ingredients(conn, lists, category_lookup) -> Dict[str, List[str]
     seen: Dict[str, set] = defaultdict(set)
 
     ingredient_rows = conn.execute(
-        'SELECT drink, ingredient FROM RecipeIngredients ORDER BY rowid'
+        'SELECT drink, ingredient FROM recipeingredients ORDER BY id'
     ).fetchall()
 
     for row in ingredient_rows:

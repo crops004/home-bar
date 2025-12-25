@@ -3,6 +3,7 @@
     "@tailwindcss/cli": "^4.1.11",
     "@tailwindcss/forms": "^0.5.10",
     "concurrently": "^9.2.0",
+    "cross-env": "^10.1.0",
     "tailwindcss": "^4.1.11"
   },
   "name": "drinkrecipesgrok",
@@ -12,7 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -n TAILWIND,FLASK -c blue,green \"npm:dev:css\" \"npm:dev:flask\"",
     "dev:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --watch",
-    "dev:flask": "python app.py",
+    "dev:flask": "cross-env FLASK_DEV=1 python app.py",
     "build:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/dist/output.css --minify"
   },
   "keywords": [],

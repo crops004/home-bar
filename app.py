@@ -8,6 +8,7 @@ from flask import (
     flash,
     session,
     current_app,
+    g
 )
 from routes import drink_maker, bar, recipes
 from utils import get_db_connection, load_lists, close_db_connection
@@ -15,7 +16,7 @@ from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
 from config import Config
 import sqlite3
 import os
-
+import time
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -68,6 +69,21 @@ def create_app(config_class=Config):
         session.pop("logged_in", None)
         flash("Logged out")
         return redirect(url_for("login"))
+
+    @app.before_request
+    def _perf_start():
+        g._t0 = time.perf_counter()
+
+    @app.after_request
+    def _perf_log(response):
+        try:
+            dt_ms = (time.perf_counter() - g._t0) * 1000
+            # Only log the slow endpoints (adjust threshold as you want)
+            if request.path.startswith("/recipe/recipe") or dt_ms > 300:
+                current_app.logger.warning(f"[PERF] {request.method} {request.path} -> {response.status_code} in {dt_ms:.0f} ms")
+        except Exception:
+            pass
+        return response
 
     @app.before_request
     def require_login():
@@ -340,25 +356,10 @@ app = create_app()
 
 def run_app():
     if app.config.get("FLASK_DEV"):
-        from livereload import Server
-        import webbrowser
-        import threading
-
-        def open_browser():
-            webbrowser.open_new("http://localhost:5000")
-
-        if app.config.get("AUTO_OPEN_BROWSER"):
-            threading.Timer(1.0, open_browser).start()
-
-        print(">>> FLASK_DEV MODE ENABLED")
-
-        server = Server(app.wsgi_app)
-        server.watch("templates/*.html")
-        server.watch("static/**/*.css")
-        server.watch("static/**/*.js")
-        server.serve(port=5000, debug=True)
+        print(">>> FLASK_DEV MODE ENABLED (Flask reloader via watchfiles if installed)")
+        app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=True)
     else:
-        app.run(debug=False)
+        app.run(host="0.0.0.0", port=5000, debug=False)
 
 
 if __name__ == "__main__":

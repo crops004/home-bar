@@ -1,82 +1,158 @@
 import os
 import sqlite3
-from typing import List
-
-import psycopg
 from dotenv import load_dotenv
+import psycopg
 
-load_dotenv()  # loads .env into os.environ
+load_dotenv()
 
-SQLITE_PATH = "cocktail_dev.db"  # adjust if needed
-
-# Migrate in FK-safe order
-TABLES: List[str] = [
-    "Categories",
-    "Subcategories",
-    "GlassTypes",
-    "IceOptions",
-    "Methods",
-    "Units",
-    "PossibleIngredients",
-    "BarContents",
-    "Recipes",
-    "RecipeIngredients",
-]
-
-def percents(n: int) -> str:
-    return ", ".join(["%s"] * n)
+SQLITE_PATH = "cocktail_dev.db"
 
 def main() -> None:
-    pg_dsn = os.environ.get("DATABASE_URL")
-    if not pg_dsn:
-        raise SystemExit(
-            "DATABASE_URL is not set.\n"
-            "Fix: add it to .env (DATABASE_URL=...) or set $env:DATABASE_URL in PowerShell."
-        )
+    dsn = os.environ.get("DATABASE_URL")
+    if not dsn:
+        raise SystemExit("DATABASE_URL is not set. Put it in .env as DATABASE_URL=...")
 
     if not os.path.exists(SQLITE_PATH):
         raise SystemExit(f"Can't find {SQLITE_PATH} in {os.getcwd()}")
 
-    sqlite_conn = sqlite3.connect(SQLITE_PATH)
-    sqlite_conn.row_factory = sqlite3.Row
+    sq = sqlite3.connect(SQLITE_PATH)
+    sq.row_factory = sqlite3.Row
 
-    pg_conn = psycopg.connect(pg_dsn)
-    pg_cur = pg_conn.cursor()
+    pg = psycopg.connect(dsn)
+    cur = pg.cursor()
 
     try:
-        for table in TABLES:
-            # Check SQLite table exists
-            t = sqlite_conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                (table,),
-            ).fetchone()
-            if not t:
-                print(f"Skipping {table} (not found in SQLite)")
+        # -------------------------
+        # 1) Categories (remap IDs)
+        # -------------------------
+        cats = sq.execute('SELECT id, name FROM "Categories" ORDER BY id').fetchall()
+        cat_id_map: dict[int, int] = {}
+
+        print(f"Categories: inserting {len(cats)} rows...")
+        for r in cats:
+            old_id = int(r["id"])
+            name = r["name"]
+            cur.execute(
+                'INSERT INTO categories (name) VALUES (%s) '
+                'ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name '
+                'RETURNING id',
+                (name,),
+            )
+            new_id = cur.fetchone()[0]
+            cat_id_map[old_id] = int(new_id)
+
+        pg.commit()
+
+        # ----------------------------
+        # 2) Subcategories (use remap)
+        # ----------------------------
+        subs = sq.execute('SELECT id, category_id, name FROM "Subcategories" ORDER BY id').fetchall()
+        print(f"Subcategories: inserting {len(subs)} rows...")
+        for r in subs:
+            old_cat_id = int(r["category_id"])
+            new_cat_id = cat_id_map.get(old_cat_id)
+            if not new_cat_id:
+                # Shouldn't happen, but safe guard
                 continue
 
-            rows = sqlite_conn.execute(f'SELECT * FROM "{table}"').fetchall()
-            if not rows:
-                print(f"{table}: 0 rows")
-                continue
+            name = r["name"]
+            cur.execute(
+                'INSERT INTO subcategories (category_id, name) VALUES (%s, %s) '
+                'ON CONFLICT (category_id, name) DO NOTHING',
+                (new_cat_id, name),
+            )
+        pg.commit()
 
-            cols = list(rows[0].keys())
-            col_list = ", ".join([f'"{c}"' for c in cols])
-
-            insert_sql = f'INSERT INTO "{table}" ({col_list}) VALUES ({percents(len(cols))}) ON CONFLICT DO NOTHING'
-
-            print(f"{table}: inserting {len(rows)} rows...")
-
+        # -------------------------
+        # 3) Simple lookup tables
+        # -------------------------
+        def migrate_lookup(sqlite_table: str, pg_table: str) -> None:
+            rows = sq.execute(f'SELECT name FROM "{sqlite_table}" ORDER BY name').fetchall()
+            print(f"{pg_table}: inserting {len(rows)} rows...")
             for r in rows:
-                values = [r[c] for c in cols]
-                pg_cur.execute(insert_sql, values)  # type: ignore[arg-type]
+                cur.execute(
+                    f'INSERT INTO {pg_table} (name) VALUES (%s) ON CONFLICT (name) DO NOTHING',
+                    (r["name"],),
+                )
+            pg.commit()
 
-            pg_conn.commit()
+        migrate_lookup("GlassTypes", "glasstypes")
+        migrate_lookup("IceOptions", "iceoptions")
+        migrate_lookup("Methods", "methods")
+        migrate_lookup("Units", "units")
 
-        print("Migration complete.")
+        # -------------------------
+        # 4) PossibleIngredients
+        # -------------------------
+        pi = sq.execute('SELECT name, category, sub_category FROM "PossibleIngredients"').fetchall()
+        print(f"PossibleIngredients: inserting {len(pi)} rows...")
+        for r in pi:
+            cur.execute(
+                'INSERT INTO possibleingredients (name, category, sub_category) VALUES (%s, %s, %s) '
+                'ON CONFLICT (name, category, sub_category) DO NOTHING',
+                (r["name"], r["category"], r["sub_category"]),
+            )
+        pg.commit()
+
+        # -------------------------
+        # 5) BarContents
+        # -------------------------
+        bc = sq.execute('SELECT name, category, sub_category FROM "BarContents"').fetchall()
+        print(f"BarContents: inserting {len(bc)} rows...")
+        for r in bc:
+            cur.execute(
+                'INSERT INTO barcontents (name, category, sub_category) VALUES (%s, %s, %s) '
+                'ON CONFLICT (name) DO NOTHING',
+                (r["name"], r["category"], r["sub_category"]),
+            )
+        pg.commit()
+
+        # -------------------------
+        # 6) Recipes
+        # -------------------------
+        recs = sq.execute('SELECT drink, Glass, Garnish, Method, Ice, Notes, Base_Spirit FROM "Recipes"').fetchall()
+        print(f"Recipes: inserting {len(recs)} rows...")
+        for r in recs:
+            cur.execute(
+                'INSERT INTO recipes (drink, "Glass", "Garnish", "Method", "Ice", "Notes", "Base_Spirit") '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s) '
+                'ON CONFLICT (drink) DO UPDATE SET '
+                '"Glass" = EXCLUDED."Glass", '
+                '"Garnish" = EXCLUDED."Garnish", '
+                '"Method" = EXCLUDED."Method", '
+                '"Ice" = EXCLUDED."Ice", '
+                '"Notes" = EXCLUDED."Notes", '
+                '"Base_Spirit" = EXCLUDED."Base_Spirit"',
+                (
+                    r["drink"],
+                    r["Glass"],
+                    r["Garnish"],
+                    r["Method"],
+                    r["Ice"],
+                    r["Notes"],
+                    r["Base_Spirit"],
+                ),
+            )
+        pg.commit()
+
+        # -------------------------
+        # 7) RecipeIngredients
+        # -------------------------
+        ri = sq.execute('SELECT drink, ingredient, quantity, unit FROM "RecipeIngredients"').fetchall()
+        print(f"RecipeIngredients: inserting {len(ri)} rows...")
+        for r in ri:
+            cur.execute(
+                'INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (%s, %s, %s, %s)',
+                (r["drink"], r["ingredient"], r["quantity"], r["unit"]),
+            )
+        pg.commit()
+
+        print("✅ Migration complete.")
+
     finally:
-        pg_cur.close()
-        pg_conn.close()
-        sqlite_conn.close()
+        cur.close()
+        pg.close()
+        sq.close()
 
 if __name__ == "__main__":
     main()
