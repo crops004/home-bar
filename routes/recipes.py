@@ -184,10 +184,10 @@ def recipes():
 
         # 4) Availability (this may be slow depending on implementation)
         t0 = time.perf_counter()
-        # can_make_entries = get_drinks_can_make()
-        # can_make_set = {entry["drink"] for entry in can_make_entries}
+        can_make_entries = get_drinks_can_make()
+        can_make_set = {entry["drink"] for entry in can_make_entries}
         can_make_set = set()
-        # print(f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}")
+        print(f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}")
 
         # 5) Build view model
         all_recipes = []
