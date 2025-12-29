@@ -120,53 +120,71 @@ def recipes():
 
         # ---- GET (fast path) ----
         category_lookup = _build_category_lookup(lists_data)
+        spirit_category_set = {s.lower() for s in SPIRIT_CATEGORIES}
 
         # Cache spirit-name lookup set (lowercased names)
         t0 = time.perf_counter()
         spirit_name_set = _get_spirit_name_set(conn)
         print(f"[PERF] build spirit_name_set (cached): {(time.perf_counter() - t0) * 1000:.0f} ms")
 
-        # 1) Fetch recipe list (small query)
+        # 1) Fetch recipe list
         t0 = time.perf_counter()
         raw_recipes = conn.execute(
             """
             SELECT
-              r.drink,
-              COALESCE(r.base_spirit, '') AS base_spirit
+            r.drink,
+            COALESCE(r.base_spirit, '') AS base_spirit
             FROM recipes r
             ORDER BY
-              CASE WHEN r.base_spirit IS NULL OR r.base_spirit = '' THEN 1 ELSE 0 END,
-              lower(r.base_spirit),
-              lower(r.drink)
+            CASE WHEN r.base_spirit IS NULL OR r.base_spirit = '' THEN 1 ELSE 0 END,
+            lower(r.base_spirit),
+            lower(r.drink)
             """
         ).fetchall()
         print(f"[PERF] recipes list: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(raw_recipes)}")
 
-        # 2) Aggregate ingredients per drink (single query; no join to possibleingredients)
+        # 2) Ingredient summary per drink
         t0 = time.perf_counter()
         ing_rows = conn.execute(
             """
             SELECT
-              drink,
-              COALESCE(
-                string_agg(DISTINCT NULLIF(trim(ingredient), ''), ' • ' ORDER BY NULLIF(trim(ingredient), '')),
+            drink,
+            COALESCE(
+                string_agg(
+                DISTINCT NULLIF(trim(ingredient), ''),
+                ' • '
+                ORDER BY NULLIF(trim(ingredient), '')
+                ),
                 ''
-              ) AS ingredient_summary
+            ) AS ingredient_summary
             FROM recipeingredients
             GROUP BY drink
             """
         ).fetchall()
+        ingredient_summary_by_drink = {r["drink"]: (r["ingredient_summary"] or "") for r in ing_rows}
         print(f"[PERF] ingredients aggregate: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(ing_rows)}")
 
-        ingredient_summary_by_drink = {r["drink"]: (r["ingredient_summary"] or "") for r in ing_rows}
-
-        # 3) Spirit summary per drink (computed in Python from recipeingredients, using cached spirit names)
-        #    Pull only (drink, ingredient) once
+        # 3) Spirit summary per drink
         t0 = time.perf_counter()
         ri_rows = conn.execute(
             "SELECT drink, ingredient FROM recipeingredients ORDER BY id"
         ).fetchall()
         print(f"[PERF] recipeingredients scan: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(ri_rows)}")
+
+        def _is_spirit_label(label: str) -> bool:
+            raw = (label or "").strip()
+            if not raw:
+                return False
+            lowered = raw.lower()
+
+            # direct match to a spirit category label
+            if lowered in spirit_category_set:
+                return True
+
+            # "bourbon" -> "whiskey" via category_lookup (subcategory -> parent category)
+            resolved = category_lookup.get(lowered, raw)
+            resolved_lower = (resolved or "").strip().lower()
+            return resolved_lower in spirit_category_set
 
         spirits_by_drink = defaultdict(list)
         seen_spirits = defaultdict(set)
@@ -176,25 +194,21 @@ def recipes():
             ing = (r["ingredient"] or "").strip()
             if not ing:
                 continue
-            key = ing.lower()
-            if key in spirit_name_set:
+
+            lowered = ing.lower()
+
+            # Spirit if it's a known spirit NAME or a spirit category/subcategory label
+            if (lowered in spirit_name_set) or _is_spirit_label(ing):
                 if ing not in seen_spirits[drink]:
                     spirits_by_drink[drink].append(ing)
                     seen_spirits[drink].add(ing)
 
-        # 4) Availability (this may be slow depending on implementation)
+        print(f"[PERF] spirit_summary build: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(ri_rows)}")
+        # 4) Availability ("can make")
         t0 = time.perf_counter()
         can_make_entries = get_drinks_can_make()
-
-        # normalize so "Margarita" == "margarita " etc.
-        can_make_set = {
-            (entry.get("drink") or "").strip().lower()
-            for entry in can_make_entries
-        }
-
-        print(
-            f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}"
-        )
+        can_make_set = {(entry.get("drink") or "").strip().lower() for entry in can_make_entries}
+        print(f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}")
 
         # 5) Build view model
         all_recipes = []
@@ -215,10 +229,10 @@ def recipes():
                     "spirit_summary": " • ".join(spirits_by_drink.get(drink, [])),
                     "ingredient_summary": (ingredient_summary_by_drink.get(drink) or "").strip(),
 
-                    # NEW: keep existing key
+                    # the template/JS expects this
                     "available": is_makeable,
 
-                    # NEW: add aliases so older JS/templates still work
+                    # aliases (harmless, but useful)
                     "can_make": is_makeable,
                     "canMake": is_makeable,
                 }
