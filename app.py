@@ -112,13 +112,18 @@ def create_app(config_class=Config):
 
         conn = get_db_connection()
         try:
-            bar_names = conn.execute("SELECT name FROM BarContents").fetchall()
-            ingredients.update([row["name"] for row in bar_names])
+            # Add "owned" ingredient names
+            owned_names = conn.execute(
+                "SELECT name FROM possibleingredients WHERE in_bar = TRUE"
+            ).fetchall()
+            ingredients.update([row["name"] for row in owned_names])
 
+            # Add all possible ingredient names
             possible_ingredients = conn.execute(
-                "SELECT name FROM PossibleIngredients"
+                "SELECT name FROM possibleingredients"
             ).fetchall()
             ingredients.update([row["name"] for row in possible_ingredients])
+
             serialized = sorted(ingredients)
         finally:
             close_db_connection()

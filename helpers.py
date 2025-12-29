@@ -23,57 +23,43 @@ SPIRIT_CATEGORIES = {
 }
 
 
-def get_drinks_can_make() -> List[Dict[str, str]]:
-    """
-    Returns a list of drinks that can be made with the current bar contents.
-    Each item contains the drink name, base spirit, a resolved spirit category, and a list of spirit ingredients.
-    """
-    lists = load_lists()
-    category_lookup = _build_category_lookup(lists)
-
+def get_drinks_can_make() -> list[dict[str, str]]:
     conn = get_db_connection()
     try:
-        query = """
-        SELECT DISTINCT r.drink, r.Base_Spirit
-        FROM Recipes r
-        WHERE NOT EXISTS (
+        rows = conn.execute(
+            """
+            SELECT DISTINCT r.drink, r.base_spirit
+            FROM recipes r
+            WHERE NOT EXISTS (
             SELECT 1
-            FROM RecipeIngredients ri
+            FROM recipeingredients ri
             WHERE ri.drink = r.drink
-            AND NOT EXISTS (
-                SELECT 1
-                FROM BarContents bc
-                WHERE
-                    LOWER(ri.ingredient) = LOWER(bc.name)
-                    OR (LOWER(ri.ingredient) = LOWER(bc.sub_category) AND bc.sub_category IS NOT NULL)
-                    OR LOWER(ri.ingredient) = LOWER(bc.category)
-            )
-        )
-        """
-        drinks = conn.execute(query).fetchall()
-        spirit_lookup = _map_spirit_ingredients(conn, lists, category_lookup)
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM possibleingredients pi
+                    WHERE pi.in_bar = TRUE
+                        AND (
+                            lower(trim(ri.ingredient)) = lower(trim(pi.name))
+                            OR lower(trim(ri.ingredient)) = lower(trim(pi.category))
+                            OR (
+                                pi.sub_category IS NOT NULL
+                                AND lower(trim(ri.ingredient)) = lower(trim(pi.sub_category))
+                            )
+                        )
+                    )
+                )
+            """
+        ).fetchall()
     finally:
         close_db_connection()
 
-    result = []
-    for row in drinks:
-        drink_name = row['drink']
-        base_spirit_raw = (row['base_spirit'] or '').strip()
-        base_spirit = base_spirit_raw if base_spirit_raw else 'N/A'
-        resolved_category = category_lookup.get(base_spirit_raw.lower() if base_spirit_raw else '', base_spirit_raw or 'Unknown')
-        resolved_category = (resolved_category or 'Unknown').strip() or 'Unknown'
-        spirits = spirit_lookup.get(drink_name, [])
-        spirit_summary = ' | '.join(spirits)
-        result.append(
-            {
-                'drink': drink_name,
-                'base_spirit': base_spirit,
-                'base_spirit_category': resolved_category,
-                'spirits': spirits,
-                'spirit_summary': spirit_summary,
-            }
-        )
-    return result
+    return [
+        {
+            "drink": row["drink"],
+            "base_spirit": (row["base_spirit"] or "").strip(),
+        }
+        for row in rows
+    ]
 
 
 def _build_category_lookup(lists: Dict) -> Dict[str, str]:
@@ -137,41 +123,48 @@ def _map_spirit_ingredients(conn, lists, category_lookup) -> Dict[str, List[str]
 
     return spirits_by_drink
 
-def get_drinks_missing_one() -> List[Tuple[str, str]]:
+def get_drinks_missing_one() -> list[tuple[str, str]]:
     """
-    Returns a list of drinks missing exactly one ingredient, along with the missing ingredient(s).
+    Returns drinks missing exactly one ingredient, along with that missing ingredient.
     """
     conn = get_db_connection()
     try:
-        query = """
-        SELECT r.drink, (
-            SELECT GROUP_CONCAT(ri.ingredient, ', ') FROM RecipeIngredients ri
-            WHERE ri.drink = r.drink
-            AND LOWER(ri.ingredient) NOT IN (
-                SELECT LOWER(name) FROM BarContents
-                UNION
-                SELECT LOWER(category) FROM BarContents
-                UNION
-                SELECT LOWER(sub_category) FROM BarContents WHERE sub_category IS NOT NULL
+        rows = conn.execute(
+            """
+            WITH available AS (
+              SELECT lower(name) AS v FROM possibleingredients WHERE in_bar = TRUE
+              UNION
+              SELECT lower(category) AS v FROM possibleingredients WHERE in_bar = TRUE AND category IS NOT NULL AND category <> ''
+              UNION
+              SELECT lower(sub_category) AS v FROM possibleingredients WHERE in_bar = TRUE AND sub_category IS NOT NULL AND sub_category <> ''
+            ),
+            missing AS (
+              SELECT
+                ri.drink,
+                ri.ingredient
+              FROM recipeingredients ri
+              WHERE lower(ri.ingredient) NOT IN (SELECT v FROM available)
+            ),
+            missing_count AS (
+              SELECT drink, COUNT(*) AS cnt
+              FROM missing
+              GROUP BY drink
             )
-        ) AS missing_ingredients
-        FROM Recipes r
-        WHERE (
-            SELECT COUNT(*) FROM RecipeIngredients ri
-            WHERE ri.drink = r.drink
-            AND LOWER(ri.ingredient) NOT IN (
-                SELECT LOWER(name) FROM BarContents
-                UNION
-                SELECT LOWER(category) FROM BarContents
-                UNION
-                SELECT LOWER(sub_category) FROM BarContents WHERE sub_category IS NOT NULL
-            )
-        ) > 0
-        """
-        results = conn.execute(query).fetchall()
+            SELECT
+              m.drink,
+              string_agg(m.ingredient, ', ' ORDER BY m.ingredient) AS missing_ingredients
+            FROM missing m
+            JOIN missing_count mc
+              ON mc.drink = m.drink
+            WHERE mc.cnt = 1
+            GROUP BY m.drink
+            ORDER BY lower(m.drink)
+            """
+        ).fetchall()
     finally:
         close_db_connection()
-    return [(row['drink'], row['missing_ingredients']) for row in results if row['missing_ingredients']]
+
+    return [(row["drink"], row["missing_ingredients"]) for row in rows]
 
 
 def get_drinks_with_replacements() -> List[Dict]:
@@ -193,16 +186,20 @@ def get_drinks_with_replacements() -> List[Dict]:
             for ing in recipe_ings:
                 ing_name = ing['ingredient']
                 # Check if the ingredient is missing
+                # match_found using in_bar
                 match_found = conn.execute(
-                    '''
+                    """
                     SELECT 1
-                    FROM BarContents bc
-                    WHERE
-                        LOWER(?) = LOWER(bc.name)
-                        OR (LOWER(?) = LOWER(bc.sub_category) AND bc.sub_category IS NOT NULL)
-                        OR LOWER(?) = LOWER(bc.category)
-                    ''',
-                    (ing_name, ing_name, ing_name)
+                    FROM possibleingredients pi
+                    WHERE pi.in_bar = TRUE
+                    AND (
+                        lower(%s) = lower(pi.name)
+                        OR lower(%s) = lower(pi.category)
+                        OR (pi.sub_category IS NOT NULL AND lower(%s) = lower(pi.sub_category))
+                    )
+                    LIMIT 1
+                    """,
+                    (ing_name, ing_name, ing_name),
                 ).fetchone()
                 
                 if not match_found:
@@ -213,13 +210,17 @@ def get_drinks_with_replacements() -> List[Dict]:
                         (ing_name, ing_name, ing_name)
                     ).fetchone()
                     if category:
-                        # Get potential replacements from BarContents with the same category
+                        # Get potential replacements from possibleingredients.in_bar with the same category
                         replacements[ing_name] = conn.execute(
-                            '''
-                            SELECT name FROM BarContents
-                            WHERE LOWER(category) = LOWER(?) AND LOWER(name) != LOWER(?)
-                            ''',
-                            (category['category'], ing_name)
+                            """
+                            SELECT name
+                            FROM possibleingredients
+                            WHERE in_bar = TRUE
+                            AND lower(category) = lower(%s)
+                            AND lower(name) <> lower(%s)
+                            ORDER BY name
+                            """,
+                            (category["category"], ing_name),
                         ).fetchall()
         
             if missing:  # Only include drinks with at least one missing ingredient
@@ -248,84 +249,94 @@ def fetch_recipe(drink: str) -> Optional[Dict]:
         return recipe_dict
     return None
 
-def fetch_drinks_missing_ingredients() -> List[Dict]:
+def fetch_drinks_missing_ingredients() -> list[dict]:
     """
-    Returns drinks that are missing one or more ingredients based on current BarContents.
+    Returns drinks that are missing one or more ingredients based on in_bar.
     """
     conn = get_db_connection()
     try:
-        # Get all recipes
-        recipes = conn.execute('SELECT drink, Base_Spirit FROM Recipes').fetchall()
-        missing_data = []
-        
-        for recipe in recipes:
-            drink_name = recipe['drink']
-            
-            # Get recipe ingredients
-            recipe_ings = conn.execute('SELECT ingredient FROM RecipeIngredients WHERE drink = ?', (drink_name,)).fetchall()
-            missing = []
-            
-            for ing in recipe_ings:
-                ing_name = ing['ingredient']
-                # Check if the ingredient matches anything in the user's bar
-                match_found = conn.execute(
-                    '''
-                    SELECT 1
-                    FROM BarContents bc
-                    WHERE
-                        LOWER(?) = LOWER(bc.name)
-                        OR (LOWER(?) = LOWER(bc.sub_category) AND bc.sub_category IS NOT NULL)
-                        OR LOWER(?) = LOWER(bc.category)
-                    ''',
-                    (ing_name, ing_name, ing_name)
-                ).fetchone()
-                
-                if not match_found:
-                    missing.append(ing_name)
-            
-            if missing:
-                missing_data.append({
-                    'drink': drink_name,
-                    'base_spirit': recipe['Base_Spirit'] if recipe['Base_Spirit'] else 'N/A',
-                    'missing': missing
-                })
+        rows = conn.execute(
+            """
+            WITH available AS (
+              SELECT lower(name) AS v FROM possibleingredients WHERE in_bar = TRUE
+              UNION
+              SELECT lower(category) AS v FROM possibleingredients WHERE in_bar = TRUE AND category IS NOT NULL AND category <> ''
+              UNION
+              SELECT lower(sub_category) AS v FROM possibleingredients WHERE in_bar = TRUE AND sub_category IS NOT NULL AND sub_category <> ''
+            ),
+            missing AS (
+              SELECT
+                r.drink,
+                COALESCE(r.base_spirit, '') AS base_spirit,
+                ri.ingredient
+              FROM recipes r
+              JOIN recipeingredients ri
+                ON ri.drink = r.drink
+              WHERE lower(ri.ingredient) NOT IN (SELECT v FROM available)
+            )
+            SELECT
+              drink,
+              base_spirit,
+              array_agg(ingredient ORDER BY ingredient) AS missing
+            FROM missing
+            GROUP BY drink, base_spirit
+            ORDER BY lower(base_spirit), lower(drink)
+            """
+        ).fetchall()
     finally:
         close_db_connection()
-    return missing_data
 
-def fetch_drinks_with_base() -> List[Tuple[str, List[str]]]:
+    return [
+        {
+            "drink": row["drink"],
+            "base_spirit": row["base_spirit"] or "N/A",
+            "missing": row["missing"] or [],
+        }
+        for row in rows
+    ]
+
+def fetch_drinks_with_base() -> list[tuple[str, list[str]]]:
     """
-    Returns drinks where the base spirit is in the bar, but one or more ingredients are missing.
+    Returns drinks where the base spirit is in the bar (match against owned sub_category),
+    but one or more ingredients are missing.
     """
     conn = get_db_connection()
     try:
-        query = """
-        SELECT r.drink, (
-            SELECT GROUP_CONCAT(ri.ingredient) FROM RecipeIngredients ri
-            WHERE ri.drink = r.drink
-            AND LOWER(ri.ingredient) NOT IN (
-                SELECT LOWER(name) FROM BarContents
-                UNION
-                SELECT LOWER(category) FROM BarContents
-                UNION
-                SELECT LOWER(sub_category) FROM BarContents WHERE sub_category IS NOT NULL
+        rows = conn.execute(
+            """
+            WITH available AS (
+              SELECT lower(name) AS v FROM possibleingredients WHERE in_bar = TRUE
+              UNION
+              SELECT lower(category) AS v FROM possibleingredients WHERE in_bar = TRUE AND category IS NOT NULL AND category <> ''
+              UNION
+              SELECT lower(sub_category) AS v FROM possibleingredients WHERE in_bar = TRUE AND sub_category IS NOT NULL AND sub_category <> ''
+            ),
+            owned_base AS (
+              SELECT DISTINCT lower(sub_category) AS v
+              FROM possibleingredients
+              WHERE in_bar = TRUE AND sub_category IS NOT NULL AND sub_category <> ''
+            ),
+            missing AS (
+              SELECT
+                r.drink,
+                ri.ingredient
+              FROM recipes r
+              JOIN recipeingredients ri
+                ON ri.drink = r.drink
+              WHERE lower(ri.ingredient) NOT IN (SELECT v FROM available)
             )
-        ) AS missing
-        FROM Recipes r
-        WHERE r.Base_Spirit IN (SELECT sub_category FROM BarContents WHERE sub_category IS NOT NULL)
-        AND EXISTS (
-            SELECT 1 FROM RecipeIngredients ri
-            WHERE ri.drink = r.drink
-            AND LOWER(ri.ingredient) NOT IN (
-                SELECT LOWER(name) FROM BarContents
-                UNION
-                SELECT LOWER(category) FROM BarContents
-                UNION
-                SELECT LOWER(sub_category) FROM BarContents WHERE sub_category IS NOT NULL
-            )
-        )
-        """
-        results = conn.execute(query).fetchall()
+            SELECT
+              r.drink,
+              array_agg(m.ingredient ORDER BY m.ingredient) AS missing
+            FROM recipes r
+            JOIN missing m
+              ON m.drink = r.drink
+            WHERE lower(COALESCE(r.base_spirit, '')) IN (SELECT v FROM owned_base)
+            GROUP BY r.drink
+            ORDER BY lower(r.drink)
+            """
+        ).fetchall()
     finally:
         close_db_connection()
-    return [(row['drink'], row['missing'].split(',') if row['missing'] else []) for row in results]
+
+    return [(row["drink"], row["missing"] or []) for row in rows]

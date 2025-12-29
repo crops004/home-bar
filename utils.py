@@ -21,30 +21,28 @@ def _sqlite_database_path() -> str:
     return "cocktail_dev.db"
 
 
-def _rewrite_sql_for_postgres(sql: str) -> str:
+def _rewrite_sql_for_postgres(sql: str, has_params: bool) -> str:
     """
-    Minimal SQL rewrites so your existing SQLite-style SQL keeps working.
+    Minimal SQL rewrites so your existing SQLite-style SQL keeps working on Postgres.
 
-    - Convert SQLite parameter placeholders '?' -> '%s'
+    - Convert SQLite parameter placeholders '?' -> '%s' (only when params are provided)
     - Convert SQLite 'INSERT OR IGNORE' -> Postgres 'INSERT ... ON CONFLICT DO NOTHING'
-      (Works only when a unique constraint exists on the target table/columns.)
     """
     s = sql
 
-    # Placeholder conversion: ? -> %s
-    # (Assumes you are using ? only for params, not in string literals.)
-    s = s.replace("?", "%s")
+    # Only rewrite placeholders if the caller passed params.
+    # This avoids accidentally touching literal '?' in SQL text.
+    if has_params and "?" in s:
+        s = s.replace("?", "%s")
 
-    # SQLite upsert ignore
-    # Example: INSERT OR IGNORE INTO PossibleIngredients (...) VALUES (...)
-    # Becomes: INSERT INTO PossibleIngredients (...) VALUES (...) ON CONFLICT DO NOTHING
+    # SQLite upsert ignore: INSERT OR IGNORE -> INSERT ... ON CONFLICT DO NOTHING
+    # Note: this assumes the target has a unique constraint.
     if "INSERT OR IGNORE" in s.upper():
-        # preserve original casing by doing a case-insensitive approach:
         s = s.replace("INSERT OR IGNORE", "INSERT")
         s = s.replace("insert or ignore", "insert")
-        # Add ON CONFLICT DO NOTHING at the end if not already present
         if "ON CONFLICT" not in s.upper():
             s = s.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+
     return s
 
 
@@ -60,7 +58,7 @@ class DBConn:
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> Any:
         if self.kind == "postgres":
-            sql = _rewrite_sql_for_postgres(sql)
+            sql = _rewrite_sql_for_postgres(sql, has_params=bool(params))
             return self._conn.execute(sql, params)
         # sqlite
         return self._conn.execute(sql, params)

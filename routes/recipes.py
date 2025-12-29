@@ -100,7 +100,7 @@ def recipes():
             base_spirit = request.form["base_spirit"]
 
             conn.execute(
-                "INSERT INTO Recipes (drink, glass, garnish, method, ice, notes, base_spirit) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO recipes (drink, glass, garnish, method, ice, notes, base_spirit) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (drink, glass, garnish, method, ice, notes, base_spirit),
             )
 
@@ -110,7 +110,7 @@ def recipes():
                 quantity = request.form[f"quantity_{i}"]
                 unit = request.form[f"unit_{i}"]
                 conn.execute(
-                    "INSERT INTO RecipeIngredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
                     (drink, ingredient, quantity, unit),
                 )
                 i += 1
@@ -185,9 +185,16 @@ def recipes():
         # 4) Availability (this may be slow depending on implementation)
         t0 = time.perf_counter()
         can_make_entries = get_drinks_can_make()
-        can_make_set = {entry["drink"] for entry in can_make_entries}
-        can_make_set = set()
-        print(f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}")
+
+        # normalize so "Margarita" == "margarita " etc.
+        can_make_set = {
+            (entry.get("drink") or "").strip().lower()
+            for entry in can_make_entries
+        }
+
+        print(
+            f"[PERF] get_drinks_can_make: {(time.perf_counter() - t0) * 1000:.0f} ms, rows={len(can_make_entries)}"
+        )
 
         # 5) Build view model
         all_recipes = []
@@ -198,14 +205,22 @@ def recipes():
             resolved_category = category_lookup.get(base_spirit.lower(), base_spirit or "Unknown")
             resolved_category = (resolved_category or "Unknown").strip() or "Unknown"
 
+            is_makeable = (drink or "").strip().lower() in can_make_set
+
             all_recipes.append(
                 {
                     "drink": drink,
                     "base_spirit": base_spirit,
                     "base_spirit_category": resolved_category,
                     "spirit_summary": " • ".join(spirits_by_drink.get(drink, [])),
-                    "ingredient_summary": (ingredient_summary_by_drink.get(drink, "") or "").strip(),
-                    "available": drink in can_make_set,
+                    "ingredient_summary": (ingredient_summary_by_drink.get(drink) or "").strip(),
+
+                    # NEW: keep existing key
+                    "available": is_makeable,
+
+                    # NEW: add aliases so older JS/templates still work
+                    "can_make": is_makeable,
+                    "canMake": is_makeable,
                 }
             )
 
@@ -243,8 +258,8 @@ def get_recipe(drink):
                 ri.unit,
                 COALESCE(pi.category, '') AS category,
                 COALESCE(pi.sub_category, '') AS sub_category
-            FROM RecipeIngredients AS ri
-            LEFT JOIN PossibleIngredients AS pi
+            FROM recipeingredients AS ri
+            LEFT JOIN possibleingredients AS pi
                 ON LOWER(pi.name) = LOWER(ri.ingredient)
             WHERE ri.drink = ?
             ORDER BY ri.id
@@ -283,8 +298,8 @@ def get_recipe(drink):
 def delete_recipe(drink):
     conn = get_db_connection()
     try:
-        conn.execute("DELETE FROM Recipes WHERE drink = ?", (drink,))
-        conn.execute("DELETE FROM RecipeIngredients WHERE drink = ?", (drink,))
+        conn.execute("DELETE FROM recipes WHERE drink = ?", (drink,))
+        conn.execute("DELETE FROM recipeingredients WHERE drink = ?", (drink,))
         conn.commit()
     finally:
         close_db_connection()
@@ -311,7 +326,7 @@ def edit_recipe(drink):
     try:
         conn.execute(
             """
-            UPDATE Recipes
+            UPDATE recipes
             SET drink = ?, glass = ?, garnish = ?, method = ?, ice = ?, notes = ?, base_spirit = ?
             WHERE drink = ?
             """,
@@ -332,7 +347,7 @@ def edit_recipe(drink):
         target_drink = new_drink if new_drink != original_drink else original_drink
         for ingredient in ingredients:
             conn.execute(
-                "INSERT INTO RecipeIngredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
+                "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
                 (target_drink, ingredient["ingredient"], ingredient["quantity"], ingredient["unit"]),
             )
 

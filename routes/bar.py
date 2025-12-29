@@ -28,19 +28,23 @@ def bar():
     try:
         if request.method == 'POST':
             name = request.form['name']
-            category = request.form['category']
-            sub_category = request.form.get('sub_category', '')  # Optional, default to empty string
+            # Flip in_bar=true on the matching possible ingredient (case-insensitive)
             cursor = conn.execute(
-                'INSERT OR IGNORE INTO BarContents (name, category, sub_category) VALUES (?, ?, ?)',
-                (name, category, sub_category or None)
-            )  # Convert empty string to NULL
+                """
+                UPDATE possibleingredients
+                SET in_bar = TRUE
+                WHERE lower(name) = lower(%s)
+                """,
+                (name,),
+            )
             conn.commit()
 
             if cursor.rowcount == 0:
-                flash(f"{name} is already in your bar.", "info")
+                flash(f'"{name}" not found in Possible Ingredients.', "error")
             else:
                 flash(f"{name} added successfully to your bar.", "success")
-            return redirect(url_for('bar.bar'))
+
+            return redirect(url_for("bar.bar"))
             
         # Define spirit categories (based on your subcategories and context)
         spirit_categories = [
@@ -49,7 +53,14 @@ def bar():
         ]
 
         # Fetch bar contents and possible ingredients
-        bar_contents_rows = conn.execute('SELECT name, category, sub_category FROM BarContents ORDER BY category, name').fetchall()
+        bar_contents_rows = conn.execute(
+            """
+            SELECT name, category, sub_category
+            FROM possibleingredients
+            WHERE in_bar = TRUE
+            ORDER BY category, name
+            """
+        ).fetchall()
         bar_contents = [dict(row) for row in bar_contents_rows]
         
         # Tag each item with 'type': 'spirit' or 'modifier'
@@ -62,7 +73,7 @@ def bar():
             item['type'] = 'spirit' if is_spirit else 'modifier'
 
         # Fetch possible names for the dropdown
-        possible_names = conn.execute('SELECT DISTINCT name FROM PossibleIngredients ORDER BY name').fetchall()
+        possible_names = conn.execute('SELECT DISTINCT name FROM possibleingredients ORDER BY name').fetchall()
         possible_names = [row['name'] for row in possible_names]
         
         return render_template('bar.html', items=bar_contents, possible_names=possible_names, lists=lists)
@@ -70,25 +81,26 @@ def bar():
         close_db_connection()
 
 # Delete bar item route
-@bar_bp.route('/delete_bar_item/<string:name>', methods=['DELETE'])
+@bar_bp.route("/delete_bar_item/<string:name>", methods=["DELETE"])
 def delete_bar_item(name):
     conn = get_db_connection()
     try:
-        # Log the name being deleted for debugging
-        print(f"Attempting to delete item: '{name}'")
-        # Check current contents to debug
-        existing_items = conn.execute('SELECT name FROM BarContents WHERE name = ?', (name,)).fetchall()
-        for item in existing_items:
-            print(f"Existing item in DB: '{item['name']}'")
-        
-        # Perform case-insensitive delete
-        cursor = conn.execute('DELETE FROM BarContents WHERE LOWER(name) = LOWER(?)', (name,))
+        cursor = conn.execute(
+            """
+            UPDATE possibleingredients
+            SET in_bar = FALSE
+            WHERE lower(name) = lower(%s)
+            """,
+            (name,),
+        )
         conn.commit()
+
         if cursor.rowcount == 0:
-            return jsonify({'message': f'No item named "{name}" found in bar'}), 404
-        return jsonify({'message': f'{name} deleted from bar'}), 200
+            return jsonify({"message": f'No item named "{name}" found'}), 404
+
+        return jsonify({"message": f'{name} removed from bar'}), 200
     except Exception as e:
         conn.rollback()
-        return jsonify({'message': f'Error deleting item: {str(e)}'}), 500
+        return jsonify({"message": f"Error removing item: {str(e)}"}), 500
     finally:
         close_db_connection()
