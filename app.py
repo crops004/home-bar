@@ -17,6 +17,8 @@ from config import Config
 import sqlite3
 import os
 import time
+import logging
+from werkzeug.exceptions import BadRequest, BadRequestKeyError
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -129,6 +131,29 @@ def create_app(config_class=Config):
             close_db_connection()
 
         return jsonify(serialized)
+
+    # --- Helpful 400 logging (Render currently only shows the status code) ---
+    app.logger.setLevel(logging.INFO)
+
+    @app.errorhandler(BadRequestKeyError)
+    def handle_bad_request_key_error(e):
+        # Typically: request.form['some_field'] missing
+        app.logger.exception("BadRequestKeyError: %s", e)
+        app.logger.info("POST %s content_type=%s", request.path, request.content_type)
+        app.logger.info("form keys=%s", list(request.form.keys()))
+        app.logger.info("files keys=%s", list(request.files.keys()))
+        return "Bad Request (missing expected form field)", 400
+
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(e):
+        # Typically: invalid JSON, or abort(400)
+        app.logger.exception("BadRequest: %s", getattr(e, "description", str(e)))
+        app.logger.info("REQ %s %s content_type=%s len=%s",
+                        request.method, request.path, request.content_type, request.content_length)
+        app.logger.info("form keys=%s", list(request.form.keys()))
+        app.logger.info("files keys=%s", list(request.files.keys()))
+        app.logger.info("json=%s", request.get_json(silent=True))
+        return "Bad Request", 400
 
     @app.route("/ingredient-details/<name>")
     def get_ingredient_details(name):
