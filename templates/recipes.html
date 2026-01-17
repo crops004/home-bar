@@ -161,7 +161,7 @@
                         </label>
                         <label class="flex flex-col gap-1 text-sm">
                             <span class="modal-label">Ice</span>
-                            <select id="add_ice" name="Ice" class="modal-input">
+                            <select id="add_ice" name="ice" class="modal-input">
                                 <option value="">None</option>
                                 {% for ice in lists['ice_options'] %}
                                     <option value="{{ ice }}">{{ ice }}</option>
@@ -259,7 +259,7 @@
                         </label>
                         <label class="flex flex-col gap-1 text-sm">
                             <span class="modal-label">Ice</span>
-                            <select id="edit_ice" name="Ice" class="modal-input">
+                            <select id="edit_ice" name="ice" class="modal-input">
                                 <option value="">None</option>
                                 {% for ice in lists['ice_options'] %}
                                     <option value="{{ ice }}">{{ ice }}</option>
@@ -878,7 +878,7 @@
             const glass = data.glass || 'None';
             const garnish = data.garnish || 'None';
             const method = data.method || 'None';
-            const ice = data.ice || data.Ice || 'None';
+            const ice = data.ice || data.ice || 'None';
             const notes = data.notes || 'None';
 
             details.innerHTML = `
@@ -1263,7 +1263,7 @@
                 glass: form.querySelector('#edit-glass').value,
                 garnish: form.querySelector('#edit-garnish').value,
                 method: form.querySelector('#edit-method').value,
-                Ice: iceInput ? iceInput.value : '',
+                ice: iceInput ? iceInput.value : '',
                 notes: form.querySelector('#edit-notes').value,
                 base_spirit: form.querySelector('#edit-base_spirit').value,
                 ingredients: []

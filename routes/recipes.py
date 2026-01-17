@@ -91,13 +91,25 @@ def recipes():
     t_total = time.perf_counter()
     try:
         if request.method == "POST":
-            drink = request.form["drink"].strip().title()
-            glass = request.form["glass"]
-            garnish = request.form["garnish"]
-            method = request.form["method"]
-            ice = request.form["ice"]
-            notes = request.form["notes"]
-            base_spirit = request.form["base_spirit"]
+            form = request.form
+
+            # Required field(s)
+            drink_raw = (form.get("drink") or "").strip()
+            if not drink_raw:
+                current_app.logger.warning(
+                    "Recipe POST missing 'drink'. form_keys=%s content_type=%s",
+                    list(form.keys()), request.content_type
+                )
+                return "Bad Request: missing drink", 400
+
+            # Optional fields (use defaults so missing keys don't throw 400)
+            drink = drink_raw.title()
+            glass = (form.get("glass") or "").strip()
+            garnish = (form.get("garnish") or "").strip()
+            method = (form.get("method") or "").strip()
+            ice = (form.get("ice") or "").strip()
+            notes = (form.get("notes") or "").strip()
+            base_spirit = (form.get("base_spirit") or "").strip()
 
             conn.execute(
                 "INSERT INTO recipes (drink, glass, garnish, method, ice, notes, base_spirit) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -105,10 +117,28 @@ def recipes():
             )
 
             i = 0
-            while f"ingredient_{i}" in request.form:
-                ingredient = request.form[f"ingredient_{i}"]
-                quantity = request.form[f"quantity_{i}"]
-                unit = request.form[f"unit_{i}"]
+            while True:
+                ing_key = f"ingredient_{i}"
+                if ing_key not in form:
+                    break
+
+                ingredient = (form.get(ing_key) or "").strip()
+                quantity = (form.get(f"quantity_{i}") or "").strip()
+                unit = (form.get(f"unit_{i}") or "").strip()
+
+                # If your UI adds a trailing blank row, just skip it
+                if not ingredient and not quantity and not unit:
+                    i += 1
+                    continue
+
+                # If ingredient exists but qty/unit missing from the POST, log it
+                if ingredient and (f"quantity_{i}" not in form or f"unit_{i}" not in form):
+                    current_app.logger.warning(
+                        "Recipe POST missing qty/unit for row %s. form_keys=%s",
+                        i, list(form.keys())
+                    )
+                    return f"Bad Request: missing quantity/unit for ingredient row {i}", 400
+
                 conn.execute(
                     "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
                     (drink, ingredient, quantity, unit),
