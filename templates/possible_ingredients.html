@@ -67,6 +67,14 @@
                         <button
                             type="button"
                             class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-logo transition"
+                            onclick="openPriceModal(this)"
+                        >
+                            <span class="text-base leading-none">$</span>
+                            Prices
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 text-sm text-text-muted hover:text-logo transition"
                             onclick="openEditModal(this)"
                         >
                             <span class="text-base leading-none">✎</span>
@@ -158,6 +166,79 @@
                     <button type="button" onclick="saveEditIngredient()" class="modal-button-primary">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Ingredient Pricing Modal -->
+    <div id="price-modal" class="modal-backdrop hidden">
+        <div class="modal-panel max-w-2xl">
+            <div class="modal-header">
+                <h2 class="text-xl font-semibold text-text-normal">Ingredient Pricing</h2>
+                <button type="button" onclick="closePriceModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
+            </div>
+            <div class="modal-body space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-text-muted">Ingredient</p>
+                        <p id="price-ingredient-name" class="text-lg font-semibold text-text-normal">Ingredient</p>
+                    </div>
+                    <div class="text-left sm:text-right">
+                        <p class="text-xs uppercase tracking-wide text-text-muted">Latest $/ml</p>
+                        <p id="price-latest" class="text-lg font-semibold text-text-normal">—</p>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-border bg-background-mid/50 p-4 space-y-3">
+                    <p class="text-sm text-text-muted">Record a purchase to track price per ml (US volume units supported).</p>
+                    <form id="purchase-form" class="grid gap-3 sm:grid-cols-2">
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Date</span>
+                            <input type="date" id="purchase-date" required class="modal-input" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Location</span>
+                            <input type="text" id="purchase-location" class="modal-input" placeholder="Store or website" />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Size</span>
+                            <input type="number" id="purchase-size" class="modal-input" step="0.01" min="0" inputmode="decimal" required />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Unit</span>
+                            <select id="purchase-unit" class="modal-input" required>
+                                <option value="">Select unit</option>
+                                <option value="ml">ml</option>
+                                <option value="l">l</option>
+                                <option value="oz">oz</option>
+                                <option value="fl oz">fl oz</option>
+                                <option value="cup">cup</option>
+                                <option value="pt">pt</option>
+                                <option value="qt">qt</option>
+                                <option value="gal">gal</option>
+                                <option value="tbsp">tbsp</option>
+                                <option value="tsp">tsp</option>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm">
+                            <span class="modal-label">Price (USD)</span>
+                            <input type="number" id="purchase-price" class="modal-input" step="0.01" min="0" inputmode="decimal" required />
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm sm:col-span-2">
+                            <span class="modal-label">Notes (optional)</span>
+                            <input type="text" id="purchase-notes" class="modal-input" placeholder="Bottle size, brand, sale, etc." />
+                        </label>
+                        <div class="sm:col-span-2 flex justify-end">
+                            <button type="submit" class="modal-button-primary">Add Purchase</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-lg font-semibold text-text-normal">Purchase History</h3>
+                    <div id="purchase-list" class="space-y-3"></div>
+                    <p id="purchase-empty" class="text-sm text-text-muted hidden">No purchases yet.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -267,6 +348,208 @@
                 window.alert(message);
             } else {
                 console.log(message);
+            }
+        }
+
+        const moneyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
+        const perMlFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 4,
+            maximumFractionDigits: 4,
+        });
+
+        let activeIngredientId = null;
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function formatQuantity(value) {
+            const num = Number(value);
+            if (Number.isNaN(num)) {
+                return value || '';
+            }
+            return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+
+        function openPriceModal(button) {
+            const card = button.closest('.ingredient-card');
+            if (!card) {
+                return;
+            }
+
+            const modal = document.getElementById('price-modal');
+            if (!modal) {
+                return;
+            }
+
+            activeIngredientId = card.dataset.id;
+            document.getElementById('price-ingredient-name').textContent = card.dataset.name || 'Ingredient';
+
+            const dateInput = document.getElementById('purchase-date');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            fetchPurchaseHistory();
+        }
+
+        function closePriceModal() {
+            const modal = document.getElementById('price-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+            activeIngredientId = null;
+        }
+
+        async function fetchPurchaseHistory() {
+            if (!activeIngredientId) {
+                return;
+            }
+
+            const list = document.getElementById('purchase-list');
+            if (list) {
+                list.innerHTML = '<p class="text-sm text-text-muted">Loading...</p>';
+            }
+
+            try {
+                const response = await fetch(`/ingredient-purchases/${activeIngredientId}`);
+                if (!response.ok) {
+                    throw new Error(`Unable to load purchases (status ${response.status}).`);
+                }
+                const purchases = await response.json();
+                renderPurchaseHistory(Array.isArray(purchases) ? purchases : []);
+            } catch (error) {
+                console.error('Unable to load purchases:', error);
+                notify('Unable to load purchase history. Please try again.', true);
+            }
+        }
+
+        function renderPurchaseHistory(purchases) {
+            const list = document.getElementById('purchase-list');
+            const empty = document.getElementById('purchase-empty');
+            const latestEl = document.getElementById('price-latest');
+
+            if (!list || !empty || !latestEl) {
+                return;
+            }
+
+            list.innerHTML = '';
+            if (!purchases.length) {
+                empty.classList.remove('hidden');
+                latestEl.textContent = '—';
+                return;
+            }
+
+            empty.classList.add('hidden');
+            const latest = purchases.find((purchase) => purchase.price_per_ml);
+            if (latest && latest.price_per_ml) {
+                latestEl.textContent = `${perMlFormatter.format(latest.price_per_ml)}/ml`;
+            } else {
+                latestEl.textContent = '—';
+            }
+
+            purchases.forEach((purchase) => {
+                const location = purchase.location ? ` • ${escapeHtml(purchase.location)}` : '';
+                const sizeLabel = `${formatQuantity(purchase.size_value)} ${escapeHtml(purchase.size_unit || '')}`.trim();
+                const priceLabel = purchase.price ? moneyFormatter.format(purchase.price) : '—';
+                const perMlLabel = purchase.price_per_ml ? `${perMlFormatter.format(purchase.price_per_ml)}/ml` : '—';
+                const notesMarkup = purchase.notes
+                    ? `<p class="text-xs text-text-muted mt-1">${escapeHtml(purchase.notes)}</p>`
+                    : '';
+
+                list.insertAdjacentHTML(
+                    'beforeend',
+                    `
+                    <div class="rounded-2xl border border-border bg-background-mid/60 p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-semibold text-text-normal">${escapeHtml(purchase.purchase_date || '')}${location}</p>
+                                <p class="text-xs text-text-muted">${escapeHtml(sizeLabel)} • ${priceLabel}</p>
+                                ${notesMarkup}
+                            </div>
+                            <div class="flex items-center gap-3 justify-between sm:flex-col sm:items-end">
+                                <p class="text-sm font-semibold text-text-normal">${perMlLabel}</p>
+                                <button
+                                    type="button"
+                                    class="text-xs text-red-400 hover:text-red-300 transition"
+                                    onclick="deletePurchase(${purchase.id})"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                );
+            });
+        }
+
+        async function deletePurchase(purchaseId) {
+            if (!purchaseId) {
+                return;
+            }
+            try {
+                const response = await fetch(`/ingredient-purchase/${purchaseId}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    throw new Error(`Unable to delete purchase (status ${response.status}).`);
+                }
+                fetchPurchaseHistory();
+                notify('Purchase deleted.');
+            } catch (error) {
+                console.error('Unable to delete purchase:', error);
+                notify('Unable to delete purchase. Please try again.', true);
+            }
+        }
+
+        async function handlePurchaseSubmit(event) {
+            event.preventDefault();
+            if (!activeIngredientId) {
+                return;
+            }
+
+            const payload = {
+                purchase_date: document.getElementById('purchase-date')?.value || '',
+                location: document.getElementById('purchase-location')?.value || '',
+                size_value: document.getElementById('purchase-size')?.value || '',
+                size_unit: document.getElementById('purchase-unit')?.value || '',
+                price: document.getElementById('purchase-price')?.value || '',
+                notes: document.getElementById('purchase-notes')?.value || '',
+            };
+
+            try {
+                const response = await fetch(`/ingredient-purchases/${activeIngredientId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.message || 'Unable to add purchase.');
+                }
+                document.getElementById('purchase-size').value = '';
+                document.getElementById('purchase-price').value = '';
+                document.getElementById('purchase-notes').value = '';
+                fetchPurchaseHistory();
+                notify('Purchase added.');
+            } catch (error) {
+                console.error('Unable to add purchase:', error);
+                notify(error.message || 'Unable to add purchase. Please try again.', true);
             }
         }
 
@@ -404,12 +687,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             filterIngredientCards();
             toggleIngredientClear();
+            const purchaseForm = document.getElementById('purchase-form');
+            if (purchaseForm) {
+                purchaseForm.addEventListener('submit', handlePurchaseSubmit);
+            }
         });
 
         window.openAddModal = openAddModal;
         window.closeAddModal = closeAddModal;
         window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
+        window.openPriceModal = openPriceModal;
+        window.closePriceModal = closePriceModal;
+        window.deletePurchase = deletePurchase;
         window.deleteIngredient = deleteIngredient;
         window.saveEditIngredient = saveEditIngredient;
         window.filterIngredientCards = filterIngredientCards;

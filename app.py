@@ -20,6 +20,101 @@ import time
 import logging
 from werkzeug.exceptions import BadRequest, BadRequestKeyError
 
+UNIT_TO_ML = {
+    "ml": 1.0,
+    "milliliter": 1.0,
+    "millilitre": 1.0,
+    "l": 1000.0,
+    "liter": 1000.0,
+    "litre": 1000.0,
+    "oz": 29.5735,
+    "fl oz": 29.5735,
+    "floz": 29.5735,
+    "fluid ounce": 29.5735,
+    "gal": 3785.41,
+    "gallon": 3785.41,
+    "qt": 946.353,
+    "quart": 946.353,
+    "pt": 473.176,
+    "pint": 473.176,
+    "cup": 236.588,
+    "tbsp": 14.7868,
+    "tablespoon": 14.7868,
+    "tsp": 4.92892,
+    "teaspoon": 4.92892,
+}
+
+
+def _normalize_unit(unit: str) -> str:
+    u = (unit or "").strip().lower()
+    u = u.replace(".", "")
+    u = u.replace("fluid ounces", "fluid ounce")
+    u = u.replace("fluid ounce", "fl oz")
+    u = u.replace("fl oz", "fl oz")
+    u = u.replace("floz", "fl oz")
+    u = " ".join(u.split())
+    if u.endswith("s") and u[:-1] in UNIT_TO_ML:
+        u = u[:-1]
+    return u
+
+
+def _convert_to_ml(value: float, unit: str) -> float | None:
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    factor = UNIT_TO_ML.get(_normalize_unit(unit))
+    if not factor:
+        return None
+    return v * factor
+
+
+def _parse_float(value) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(str(value).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _ensure_ingredient_purchases_table(conn) -> None:
+    if getattr(conn, "kind", "sqlite") == "postgres":
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS IngredientPurchases (
+                id SERIAL PRIMARY KEY,
+                ingredient_id INTEGER NOT NULL REFERENCES PossibleIngredients(id) ON DELETE CASCADE,
+                purchase_date TEXT NOT NULL,
+                location TEXT,
+                size_value REAL NOT NULL,
+                size_unit TEXT NOT NULL,
+                price REAL NOT NULL,
+                notes TEXT
+            )
+            """
+        )
+    else:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS IngredientPurchases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ingredient_id INTEGER NOT NULL,
+                purchase_date TEXT NOT NULL,
+                location TEXT,
+                size_value REAL NOT NULL,
+                size_unit TEXT NOT NULL,
+                price REAL NOT NULL,
+                notes TEXT,
+                FOREIGN KEY (ingredient_id) REFERENCES PossibleIngredients(id) ON DELETE CASCADE
+            )
+            """
+        )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ingredient_purchases_ingredient_id ON IngredientPurchases (ingredient_id)"
+    )
+    conn.commit()
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -336,6 +431,94 @@ def create_app(config_class=Config):
         finally:
             close_db_connection()
         return jsonify([row["name"] for row in names])
+
+    @app.route("/ingredient-purchases/<int:ingredient_id>", methods=["GET", "POST"])
+    def ingredient_purchases(ingredient_id):
+        conn = get_db_connection()
+        try:
+            _ensure_ingredient_purchases_table(conn)
+
+            if request.method == "POST":
+                data = request.get_json(silent=True) or request.form
+                purchase_date = (data.get("purchase_date") or "").strip()
+                location = (data.get("location") or "").strip()
+                size_value = _parse_float(data.get("size_value"))
+                size_unit = (data.get("size_unit") or "").strip()
+                price = _parse_float(data.get("price"))
+                notes = (data.get("notes") or "").strip()
+
+                if not purchase_date:
+                    return jsonify({"message": "Purchase date is required."}), 400
+                if size_value is None or size_value <= 0:
+                    return jsonify({"message": "Size value must be a positive number."}), 400
+                if not size_unit:
+                    return jsonify({"message": "Size unit is required."}), 400
+                if price is None or price <= 0:
+                    return jsonify({"message": "Price must be a positive number."}), 400
+
+                conn.execute(
+                    """
+                    INSERT INTO IngredientPurchases
+                        (ingredient_id, purchase_date, location, size_value, size_unit, price, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        ingredient_id,
+                        purchase_date,
+                        location or None,
+                        size_value,
+                        size_unit,
+                        price,
+                        notes or None,
+                    ),
+                )
+                conn.commit()
+                return jsonify({"message": "Purchase added."}), 201
+
+            rows = conn.execute(
+                """
+                SELECT id, purchase_date, location, size_value, size_unit, price, notes
+                FROM IngredientPurchases
+                WHERE ingredient_id = ?
+                ORDER BY purchase_date DESC, id DESC
+                """,
+                (ingredient_id,),
+            ).fetchall()
+        finally:
+            close_db_connection()
+
+        purchases = []
+        for row in rows:
+            size_value = row["size_value"]
+            size_unit = row["size_unit"]
+            size_ml = _convert_to_ml(size_value, size_unit)
+            price = row["price"]
+            price_per_ml = (price / size_ml) if (size_ml and price is not None) else None
+            purchases.append(
+                {
+                    "id": row["id"],
+                    "purchase_date": row["purchase_date"],
+                    "location": row["location"] or "",
+                    "size_value": size_value,
+                    "size_unit": size_unit,
+                    "size_ml": size_ml,
+                    "price": price,
+                    "price_per_ml": price_per_ml,
+                    "notes": row["notes"] or "",
+                }
+            )
+        return jsonify(purchases)
+
+    @app.route("/ingredient-purchase/<int:purchase_id>", methods=["DELETE"])
+    def delete_ingredient_purchase(purchase_id):
+        conn = get_db_connection()
+        try:
+            _ensure_ingredient_purchases_table(conn)
+            conn.execute("DELETE FROM IngredientPurchases WHERE id = ?", (purchase_id,))
+            conn.commit()
+        finally:
+            close_db_connection()
+        return jsonify({"message": "Purchase deleted."}), 200
 
     @app.route("/delete_possible_ingredient/<int:id>", methods=["DELETE"])
     def delete_possible_ingredient(id):

@@ -33,6 +33,18 @@ CREATE TABLE PossibleIngredients (
                 UNIQUE(name, category, sub_category)
             );
 
+CREATE TABLE IngredientPurchases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ingredient_id INTEGER NOT NULL,
+                purchase_date TEXT NOT NULL,
+                location TEXT,
+                size_value REAL NOT NULL,
+                size_unit TEXT NOT NULL,
+                price REAL NOT NULL,
+                notes TEXT,
+                FOREIGN KEY (ingredient_id) REFERENCES PossibleIngredients(id) ON DELETE CASCADE
+            );
+
 CREATE TABLE "RecipeIngredients" (
 "drink" TEXT,
   "ingredient" TEXT,
