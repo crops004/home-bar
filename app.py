@@ -8,14 +8,13 @@ from flask import (
     flash,
     session,
     current_app,
-    g
+    g,
+    abort,
 )
 from routes import drink_maker, bar, recipes
 from utils import get_db_connection, load_lists, close_db_connection
 from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
 from config import Config
-import sqlite3
-import os
 import time
 import logging
 from werkzeug.exceptions import BadRequest, BadRequestKeyError
@@ -79,37 +78,20 @@ def _parse_float(value) -> float | None:
 
 
 def _ensure_ingredient_purchases_table(conn) -> None:
-    if getattr(conn, "kind", "sqlite") == "postgres":
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS IngredientPurchases (
-                id SERIAL PRIMARY KEY,
-                ingredient_id INTEGER NOT NULL REFERENCES PossibleIngredients(id) ON DELETE CASCADE,
-                purchase_date TEXT NOT NULL,
-                location TEXT,
-                size_value REAL NOT NULL,
-                size_unit TEXT NOT NULL,
-                price REAL NOT NULL,
-                notes TEXT
-            )
-            """
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS IngredientPurchases (
+            id SERIAL PRIMARY KEY,
+            ingredient_id INTEGER NOT NULL REFERENCES PossibleIngredients(id) ON DELETE CASCADE,
+            purchase_date TEXT NOT NULL,
+            location TEXT,
+            size_value REAL NOT NULL,
+            size_unit TEXT NOT NULL,
+            price REAL NOT NULL,
+            notes TEXT
         )
-    else:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS IngredientPurchases (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ingredient_id INTEGER NOT NULL,
-                purchase_date TEXT NOT NULL,
-                location TEXT,
-                size_value REAL NOT NULL,
-                size_unit TEXT NOT NULL,
-                price REAL NOT NULL,
-                notes TEXT,
-                FOREIGN KEY (ingredient_id) REFERENCES PossibleIngredients(id) ON DELETE CASCADE
-            )
-            """
-        )
+        """
+    )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_ingredient_purchases_ingredient_id ON IngredientPurchases (ingredient_id)"
     )
@@ -255,7 +237,7 @@ def create_app(config_class=Config):
         conn = get_db_connection()
         try:
             ingredient = conn.execute(
-                "SELECT category, sub_category FROM PossibleIngredients WHERE name = ?",
+                "SELECT category, sub_category FROM PossibleIngredients WHERE name = %s",
                 (name,),
             ).fetchone()
         finally:
@@ -272,6 +254,8 @@ def create_app(config_class=Config):
 
     @app.route("/missing-ingredients")
     def missing_ingredients():
+        if not current_app.config.get("ENABLE_FUTURE_ROUTES", False):
+            abort(404)
         missing_drinks = fetch_drinks_missing_ingredients()
         return render_template(
             "missing_ingredients.html", missing_drinks=missing_drinks
@@ -279,6 +263,8 @@ def create_app(config_class=Config):
 
     @app.route("/have-base")
     def have_base():
+        if not current_app.config.get("ENABLE_FUTURE_ROUTES", False):
+            abort(404)
         have_base_spirit = fetch_drinks_with_base()
         return render_template("have_base.html", have_base_spirit=have_base_spirit)
 
@@ -299,13 +285,13 @@ def create_app(config_class=Config):
                     cat.strip() for cat in categories_input.split(",") if cat.strip()
                 ]
                 for cat in new_categories:
-                    conn.execute("INSERT INTO Categories (name) VALUES (?)", (cat,))
+                    conn.execute("INSERT INTO Categories (name) VALUES (%s)", (cat,))
 
                 for cat in new_categories:
                     subcats_input = request.form.get(f"subcategories_{cat}", "")
                     if subcats_input:
                         cursor = conn.execute(
-                            "SELECT id FROM Categories WHERE name = ?", (cat,)
+                            "SELECT id FROM Categories WHERE name = %s", (cat,)
                         )
                         cat_id_row = cursor.fetchone()
                         if cat_id_row:
@@ -317,7 +303,7 @@ def create_app(config_class=Config):
                             ]
                             for subcat in new_subcats:
                                 conn.execute(
-                                    "INSERT INTO Subcategories (category_id, name) VALUES (?, ?)",
+                                    "INSERT INTO Subcategories (category_id, name) VALUES (%s, %s)",
                                     (cat_id, subcat),
                                 )
 
@@ -328,7 +314,7 @@ def create_app(config_class=Config):
                     if glass.strip()
                 ]
                 for glass in new_glass_types:
-                    conn.execute("INSERT INTO GlassTypes (name) VALUES (?)", (glass,))
+                    conn.execute("INSERT INTO GlassTypes (name) VALUES (%s)", (glass,))
 
                 methods_input = request.form.get("methods", "")
                 new_methods = [
@@ -337,28 +323,27 @@ def create_app(config_class=Config):
                     if method.strip()
                 ]
                 for method in new_methods:
-                    conn.execute("INSERT INTO Methods (name) VALUES (?)", (method,))
+                    conn.execute("INSERT INTO Methods (name) VALUES (%s)", (method,))
 
                 ice_options_input = request.form.get("ice_options", "")
                 new_ice_options = [
                     ice.strip() for ice in ice_options_input.split(",") if ice.strip()
                 ]
                 for ice in new_ice_options:
-                    conn.execute("INSERT INTO IceOptions (name) VALUES (?)", (ice,))
+                    conn.execute("INSERT INTO IceOptions (name) VALUES (%s)", (ice,))
 
                 units_input = request.form.get("units", "")
                 new_units = [
                     unit.strip() for unit in units_input.split(",") if unit.strip()
                 ]
                 for unit in new_units:
-                    conn.execute("INSERT INTO Units (name) VALUES (?)", (unit,))
+                    conn.execute("INSERT INTO Units (name) VALUES (%s)", (unit,))
 
                 conn.commit()
             finally:
                 close_db_connection()
 
             current_app.config["LISTS"] = load_lists()
-            close_db_connection()
             return redirect(url_for("manage_lists"))
 
         return render_template("lists.html", lists=current_app.config["LISTS"])
@@ -380,8 +365,7 @@ def create_app(config_class=Config):
             close_db_connection()
         all_options = []
         for row in results:
-            # Works for both sqlite3.Row and psycopg dict rows
-            first_val = row[0] if not isinstance(row, dict) else next(iter(row.values()))
+            first_val = row["name"]
             if first_val:
                 all_options.append(first_val)
         return jsonify(all_options)
@@ -395,14 +379,15 @@ def create_app(config_class=Config):
                 category = request.form["category"]
                 sub_category = request.form.get("sub_category", "")
                 if name and category:
-                    try:
-                        conn.execute(
-                            "INSERT OR IGNORE INTO PossibleIngredients (name, category, sub_category) VALUES (?, ?, ?)",
-                            (name, category, sub_category or None),
-                        )
-                        conn.commit()
-                    except sqlite3.IntegrityError:
-                        pass
+                    conn.execute(
+                        """
+                        INSERT INTO PossibleIngredients (name, category, sub_category)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT DO NOTHING
+                        """,
+                        (name, category, sub_category or None),
+                    )
+                    conn.commit()
                 current_app.config["LISTS"] = load_lists()
                 return redirect(url_for("possible_ingredients"))
 
@@ -460,7 +445,7 @@ def create_app(config_class=Config):
                     """
                     INSERT INTO IngredientPurchases
                         (ingredient_id, purchase_date, location, size_value, size_unit, price, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         ingredient_id,
@@ -479,7 +464,7 @@ def create_app(config_class=Config):
                 """
                 SELECT id, purchase_date, location, size_value, size_unit, price, notes
                 FROM IngredientPurchases
-                WHERE ingredient_id = ?
+                WHERE ingredient_id = %s
                 ORDER BY purchase_date DESC, id DESC
                 """,
                 (ingredient_id,),
@@ -514,7 +499,7 @@ def create_app(config_class=Config):
         conn = get_db_connection()
         try:
             _ensure_ingredient_purchases_table(conn)
-            conn.execute("DELETE FROM IngredientPurchases WHERE id = ?", (purchase_id,))
+            conn.execute("DELETE FROM IngredientPurchases WHERE id = %s", (purchase_id,))
             conn.commit()
         finally:
             close_db_connection()
@@ -524,12 +509,11 @@ def create_app(config_class=Config):
     def delete_possible_ingredient(id):
         conn = get_db_connection()
         try:
-            conn.execute("DELETE FROM PossibleIngredients WHERE id = ?", (id,))
+            conn.execute("DELETE FROM PossibleIngredients WHERE id = %s", (id,))
             conn.commit()
         finally:
             close_db_connection()
         current_app.config["LISTS"] = load_lists()
-        close_db_connection()
         return jsonify({"message": "Ingredient deleted successfully"}), 200
 
     @app.route("/update_possible_ingredient/<id>", methods=["POST"])
@@ -545,13 +529,13 @@ def create_app(config_class=Config):
 
         try:
             conn.execute(
-                "UPDATE PossibleIngredients SET name = ?, category = ?, sub_category = ? WHERE id = ?",
+                "UPDATE PossibleIngredients SET name = %s, category = %s, sub_category = %s WHERE id = %s",
                 (name, category, sub_category or None, id),
             )
             conn.commit()
             current_app.config["LISTS"] = load_lists()
             return jsonify({"message": "Ingredient updated successfully."}), 200
-        except sqlite3.Error as e:
+        except Exception as e:
             conn.rollback()
             return jsonify({"message": f"Error updating ingredient: {str(e)}"}), 500
         finally:

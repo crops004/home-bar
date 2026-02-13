@@ -112,7 +112,7 @@ def recipes():
             base_spirit = (form.get("base_spirit") or "").strip()
 
             conn.execute(
-                "INSERT INTO recipes (drink, glass, garnish, method, ice, notes, base_spirit) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO recipes (drink, glass, garnish, method, ice, notes, base_spirit) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (drink, glass, garnish, method, ice, notes, base_spirit),
             )
 
@@ -140,7 +140,7 @@ def recipes():
                     return f"Bad Request: missing quantity/unit for ingredient row {i}", 400
 
                 conn.execute(
-                    "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (%s, %s, %s, %s)",
                     (drink, ingredient, quantity, unit),
                 )
                 i += 1
@@ -293,7 +293,7 @@ def recipes():
 def get_recipe(drink):
     conn = get_db_connection()
     try:
-        recipe = conn.execute("SELECT * FROM Recipes WHERE drink = ?", (drink,)).fetchone()
+        recipe = conn.execute("SELECT * FROM Recipes WHERE drink = %s", (drink,)).fetchone()
         ingredients = conn.execute(
             """
             SELECT
@@ -305,7 +305,7 @@ def get_recipe(drink):
             FROM recipeingredients AS ri
             LEFT JOIN possibleingredients AS pi
                 ON LOWER(pi.name) = LOWER(ri.ingredient)
-            WHERE ri.drink = ?
+            WHERE ri.drink = %s
             ORDER BY ri.id
             """,
             (drink,),
@@ -342,8 +342,8 @@ def get_recipe(drink):
 def delete_recipe(drink):
     conn = get_db_connection()
     try:
-        conn.execute("DELETE FROM recipes WHERE drink = ?", (drink,))
-        conn.execute("DELETE FROM recipeingredients WHERE drink = ?", (drink,))
+        conn.execute("DELETE FROM recipeingredients WHERE drink = %s", (drink,))
+        conn.execute("DELETE FROM recipes WHERE drink = %s", (drink,))
         conn.commit()
     finally:
         close_db_connection()
@@ -368,11 +368,13 @@ def edit_recipe(drink):
 
     conn = get_db_connection()
     try:
-        conn.execute(
+        conn.execute("DELETE FROM RecipeIngredients WHERE drink = %s", (original_drink,))
+
+        update_result = conn.execute(
             """
             UPDATE recipes
-            SET drink = ?, glass = ?, garnish = ?, method = ?, ice = ?, notes = ?, base_spirit = ?
-            WHERE drink = ?
+            SET drink = %s, glass = %s, garnish = %s, method = %s, ice = %s, notes = %s, base_spirit = %s
+            WHERE drink = %s
             """,
             (
                 new_drink,
@@ -385,13 +387,14 @@ def edit_recipe(drink):
                 original_drink,
             ),
         )
+        if getattr(update_result, "rowcount", 0) == 0:
+            conn.rollback()
+            return jsonify({"success": False, "message": "Recipe not found."}), 404
 
-        conn.execute("DELETE FROM RecipeIngredients WHERE drink = ?", (original_drink,))
-
-        target_drink = new_drink if new_drink != original_drink else original_drink
+        target_drink = new_drink
         for ingredient in ingredients:
             conn.execute(
-                "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (?, ?, ?, ?)",
+                "INSERT INTO recipeingredients (drink, ingredient, quantity, unit) VALUES (%s, %s, %s, %s)",
                 (target_drink, ingredient["ingredient"], ingredient["quantity"], ingredient["unit"]),
             )
 

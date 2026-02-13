@@ -179,7 +179,7 @@ def get_drinks_with_replacements() -> List[Dict]:
         
         for recipe in recipes:
             drink_name = recipe['drink']
-            recipe_ings = conn.execute('SELECT ingredient FROM RecipeIngredients WHERE drink = ?', (drink_name,)).fetchall()
+            recipe_ings = conn.execute('SELECT ingredient FROM RecipeIngredients WHERE drink = %s', (drink_name,)).fetchall()
             missing = []
             replacements = {}
             
@@ -206,7 +206,7 @@ def get_drinks_with_replacements() -> List[Dict]:
                     missing.append(ing_name)
                     # Find the category of the missing ingredient
                     category = conn.execute(
-                        'SELECT category FROM PossibleIngredients WHERE name = ? OR sub_category = ? OR category = ? LIMIT 1',
+                        'SELECT category FROM PossibleIngredients WHERE name = %s OR sub_category = %s OR category = %s LIMIT 1',
                         (ing_name, ing_name, ing_name)
                     ).fetchone()
                     if category:
@@ -240,7 +240,7 @@ def fetch_recipe(drink: str) -> Optional[Dict]:
     """
     conn = get_db_connection()
     try:
-        recipe = conn.execute('SELECT * FROM Recipes WHERE drink = ?', (drink,)).fetchone()
+        recipe = conn.execute('SELECT * FROM Recipes WHERE drink = %s', (drink,)).fetchone()
     finally:
         close_db_connection()
     if recipe:

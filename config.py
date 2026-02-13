@@ -14,3 +14,4 @@ class Config:
     FLASK_DEV = os.getenv("FLASK_DEV", "false").lower() == "true"
     AUTO_OPEN_BROWSER = os.getenv("FLASK_AUTO_OPEN_BROWSER", "false").lower() == "true"
     SHOW_VIEWPORT_DEBUG = os.getenv("SHOW_VIEWPORT_DEBUG", "false").lower() == "true"
+    ENABLE_FUTURE_ROUTES = os.getenv("ENABLE_FUTURE_ROUTES", "false").lower() == "true"

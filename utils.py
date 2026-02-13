@@ -1,5 +1,4 @@
 import os
-import sqlite3
 from typing import Optional, Any, Sequence, cast
 
 from flask import g, has_request_context
@@ -9,58 +8,16 @@ import psycopg
 from psycopg.rows import dict_row
 
 
-def _is_postgres() -> bool:
-    return bool(os.environ.get("DATABASE_URL"))
-
-
-def _sqlite_database_path() -> str:
-    """Local/dev fallback (file-based)."""
-    if os.environ.get("RENDER") == "true":
-        # This is still ephemeral on Render, but we won't use it once DATABASE_URL is set.
-        return "cocktail_app.db"
-    return "cocktail_dev.db"
-
-
-def _rewrite_sql_for_postgres(sql: str, has_params: bool) -> str:
-    """
-    Minimal SQL rewrites so your existing SQLite-style SQL keeps working on Postgres.
-
-    - Convert SQLite parameter placeholders '?' -> '%s' (only when params are provided)
-    - Convert SQLite 'INSERT OR IGNORE' -> Postgres 'INSERT ... ON CONFLICT DO NOTHING'
-    """
-    s = sql
-
-    # Only rewrite placeholders if the caller passed params.
-    # This avoids accidentally touching literal '?' in SQL text.
-    if has_params and "?" in s:
-        s = s.replace("?", "%s")
-
-    # SQLite upsert ignore: INSERT OR IGNORE -> INSERT ... ON CONFLICT DO NOTHING
-    # Note: this assumes the target has a unique constraint.
-    if "INSERT OR IGNORE" in s.upper():
-        s = s.replace("INSERT OR IGNORE", "INSERT")
-        s = s.replace("insert or ignore", "insert")
-        if "ON CONFLICT" not in s.upper():
-            s = s.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
-
-    return s
-
-
 class DBConn:
     """
-    Wrapper that normalizes SQLite and Postgres connections so the rest of your app
+    Wrapper around a Postgres connection so the rest of your app
     can keep calling: conn.execute(sql, params), conn.commit(), conn.rollback(), conn.close()
     """
 
-    def __init__(self, kind: str, conn: Any):
-        self.kind = kind
+    def __init__(self, conn: Any):
         self._conn = conn
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> Any:
-        if self.kind == "postgres":
-            sql = _rewrite_sql_for_postgres(sql, has_params=bool(params))
-            return self._conn.execute(sql, params)
-        # sqlite
         return self._conn.execute(sql, params)
 
     def commit(self) -> None:
@@ -75,23 +32,15 @@ class DBConn:
 
 def _create_connection() -> DBConn:
     """
-    Create either a Postgres (Neon) or SQLite connection, wrapped in DBConn.
+    Create a Postgres (Neon) connection wrapped in DBConn.
     """
-    if _is_postgres():
-        dsn = os.environ["DATABASE_URL"]
-        # Neon requires SSL; sslmode=require in DATABASE_URL is normal.  :contentReference[oaicite:4]{index=4}
-        conn = cast(Any, psycopg.connect(dsn))
-        conn.row_factory = dict_row
-        print("[DB] Using POSTGRES via DATABASE_URL (Neon)")
-        return DBConn("postgres", conn)
-
-
-    # SQLite fallback (local dev)
-    path = os.path.abspath(_sqlite_database_path())
-    conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    print(f"[DB] Using SQLITE at {path}")
-    return DBConn("sqlite", conn)
+    dsn = os.environ.get("DATABASE_URL")
+    if not dsn:
+        raise RuntimeError("DATABASE_URL is required for this Postgres-only app configuration.")
+    conn = cast(Any, psycopg.connect(dsn))
+    conn.row_factory = dict_row
+    print("[DB] Using POSTGRES via DATABASE_URL (Neon)")
+    return DBConn(conn)
 
 
 def get_db_connection() -> DBConn:
@@ -138,14 +87,14 @@ def load_lists() -> dict:
         lists["categories"] = [row["name"] for row in categories]
 
         for cat in lists["categories"]:
-            cursor = conn.execute("SELECT id FROM Categories WHERE name = ?", (cat,))
+            cursor = conn.execute("SELECT id FROM Categories WHERE name = %s", (cat,))
             cat_row = cursor.fetchone()
             if not cat_row:
                 lists["subcategories"][cat] = []
                 continue
             cat_id = cat_row["id"]
             subcategories = conn.execute(
-                "SELECT name FROM Subcategories WHERE category_id = ? ORDER BY name",
+                "SELECT name FROM Subcategories WHERE category_id = %s ORDER BY name",
                 (cat_id,),
             ).fetchall()
             lists["subcategories"][cat] = [row["name"] for row in subcategories]

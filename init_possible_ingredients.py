@@ -1,5 +1,8 @@
 import sqlite3
 
+# Legacy helper retained for historical/local SQLite workflows.
+# The active app runtime uses Postgres via DATABASE_URL.
+
 def init_possible_ingredients():
     try:
         # Connect to the database

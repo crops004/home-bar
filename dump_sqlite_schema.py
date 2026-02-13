@@ -1,4 +1,7 @@
 import sqlite3
+
+# Legacy helper retained for historical/local SQLite workflows.
+# The active app runtime uses Postgres via DATABASE_URL.
 from pathlib import Path
 
 DB_FILE = "cocktail_dev.db"  # change if your file name is different
