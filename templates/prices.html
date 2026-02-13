@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Prices{% endblock %}
+{% block content %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="hidden" data-toast-message="{{ messages[0] | escape }}" aria-hidden="true"></div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="px-4 sm:px-6 pt-4 pb-24 sm:pt-0 sm:pb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-semibold text-text-normal">Prices</h1>
+                <p class="text-sm text-text-muted">Track purchase history and compare price per ml across your ingredients.</p>
+            </div>
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-border bg-background-mid p-4 sm:p-5">
+            <h2 class="text-lg font-semibold text-text-normal">Add Purchase</h2>
+            <form method="post" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <label class="flex flex-col gap-1 text-sm lg:col-span-2">
+                    <span class="modal-label">Ingredient</span>
+                    <select name="ingredient_id" required class="modal-input">
+                        <option value="">Select ingredient</option>
+                        {% for ingredient in ingredients %}
+                            <option value="{{ ingredient['id'] }}">{{ ingredient['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Date</span>
+                    <input type="date" name="purchase_date" required class="modal-input" value="{{ today }}" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Size</span>
+                    <input type="number" name="size_value" step="0.01" min="0" required class="modal-input" placeholder="750" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Unit</span>
+                    <select name="size_unit" required class="modal-input">
+                        <option value="">Select unit</option>
+                        {% for unit in purchase_units %}
+                            <option value="{{ unit['value'] }}">{{ unit['label'] }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Price (USD)</span>
+                    <input type="number" name="price" step="0.01" min="0" required class="modal-input" placeholder="29.99" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm">
+                    <span class="modal-label">Location (optional)</span>
+                    <input type="text" name="location" class="modal-input" placeholder="Store or website" />
+                </label>
+                <label class="flex flex-col gap-1 text-sm lg:col-span-3">
+                    <span class="modal-label">Notes (optional)</span>
+                    <input type="text" name="notes" class="modal-input" placeholder="Sale, bottle notes, etc." />
+                </label>
+                <div class="lg:col-span-3 flex justify-end">
+                    <button type="submit" class="modal-button-primary">Save Purchase</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-6 space-y-3">
+            <h2 class="text-lg font-semibold text-text-normal">Purchase History</h2>
+            {% if purchases %}
+                <div class="space-y-3">
+                    {% for purchase in purchases %}
+                        <article class="rounded-2xl border border-border bg-background-mid p-4 sm:p-5">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div>
+                                    <h3 class="text-base font-semibold text-text-normal">{{ purchase['ingredient_name'] }}</h3>
+                                    <p class="text-sm text-text-muted">
+                                        {{ purchase['purchase_date'] }}
+                                        {% if purchase['location'] %} | {{ purchase['location'] }}{% endif %}
+                                    </p>
+                                    <p class="text-sm text-text-muted mt-1">
+                                        {{ purchase['size_value_display'] }} {{ purchase['size_unit_display'] }}
+                                        | ${{ "{:,.2f}".format(purchase['price']) }}
+                                    </p>
+                                    {% if purchase['notes'] %}
+                                        <p class="text-xs text-text-muted mt-1">{{ purchase['notes'] }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-left sm:text-right">
+                                    <p class="text-xs uppercase tracking-wide text-text-muted">Price Per Oz</p>
+                                    <p class="text-base font-semibold text-text-normal">
+                                        {% if purchase['price_per_oz'] is not none %}
+                                            ${{ "{:,.2f}".format(purchase['price_per_oz']) }}/oz
+                                        {% else %}
+                                            n/a
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-text-muted">No purchases yet. Add your first purchase above.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -17,6 +17,7 @@ from helpers import fetch_drinks_missing_ingredients, fetch_drinks_with_base
 from config import Config
 import time
 import logging
+from datetime import date
 from werkzeug.exceptions import BadRequest, BadRequestKeyError
 
 UNIT_TO_ML = {
@@ -42,6 +43,13 @@ UNIT_TO_ML = {
     "tsp": 4.92892,
     "teaspoon": 4.92892,
 }
+
+PURCHASE_UNITS = [
+    {"value": "ml", "label": "ml"},
+    {"value": "l", "label": "L"},
+    {"value": "oz", "label": "oz"},
+    {"value": "gallon", "label": "gallon"},
+]
 
 
 def _normalize_unit(unit: str) -> str:
@@ -75,6 +83,22 @@ def _parse_float(value) -> float | None:
         return float(str(value).replace(",", "").strip())
     except (TypeError, ValueError):
         return None
+
+
+def _format_size_value(value: float | int | None) -> str:
+    n = _parse_float(value)
+    if n is None:
+        return ""
+    if n.is_integer():
+        return str(int(n))
+    return f"{n:.4f}".rstrip("0").rstrip(".")
+
+
+def _display_unit(unit: str) -> str:
+    normalized = _normalize_unit(unit)
+    if normalized == "l":
+        return "L"
+    return (unit or "").strip()
 
 
 def _ensure_ingredient_purchases_table(conn) -> None:
@@ -493,6 +517,133 @@ def create_app(config_class=Config):
                 }
             )
         return jsonify(purchases)
+
+    @app.route("/prices", methods=["GET", "POST"])
+    def prices():
+        conn = get_db_connection()
+        try:
+            _ensure_ingredient_purchases_table(conn)
+
+            if request.method == "POST":
+                ingredient_id_raw = (request.form.get("ingredient_id") or "").strip()
+                purchase_date = (request.form.get("purchase_date") or "").strip()
+                location = (request.form.get("location") or "").strip()
+                size_value = _parse_float(request.form.get("size_value"))
+                size_unit = (request.form.get("size_unit") or "").strip()
+                price = _parse_float(request.form.get("price"))
+                notes = (request.form.get("notes") or "").strip()
+
+                ingredient_id = None
+                try:
+                    ingredient_id = int(ingredient_id_raw)
+                except (TypeError, ValueError):
+                    ingredient_id = None
+
+                if ingredient_id is None:
+                    flash("Please select an ingredient.")
+                    return redirect(url_for("prices"))
+
+                ingredient_exists = conn.execute(
+                    "SELECT id FROM PossibleIngredients WHERE id = %s",
+                    (ingredient_id,),
+                ).fetchone()
+                if not ingredient_exists:
+                    flash("Selected ingredient was not found.")
+                    return redirect(url_for("prices"))
+
+                if not purchase_date:
+                    flash("Purchase date is required.")
+                    return redirect(url_for("prices"))
+                if size_value is None or size_value <= 0:
+                    flash("Size value must be a positive number.")
+                    return redirect(url_for("prices"))
+                if not size_unit:
+                    flash("Size unit is required.")
+                    return redirect(url_for("prices"))
+                if price is None or price <= 0:
+                    flash("Price must be a positive number.")
+                    return redirect(url_for("prices"))
+
+                conn.execute(
+                    """
+                    INSERT INTO IngredientPurchases
+                        (ingredient_id, purchase_date, location, size_value, size_unit, price, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        ingredient_id,
+                        purchase_date,
+                        location or None,
+                        size_value,
+                        size_unit,
+                        price,
+                        notes or None,
+                    ),
+                )
+                conn.commit()
+                flash("Purchase added.")
+                return redirect(url_for("prices"))
+
+            ingredient_rows = conn.execute(
+                "SELECT id, name FROM PossibleIngredients ORDER BY name"
+            ).fetchall()
+            purchase_rows = conn.execute(
+                """
+                SELECT
+                    ip.id,
+                    ip.ingredient_id,
+                    pi.name AS ingredient_name,
+                    ip.purchase_date,
+                    ip.location,
+                    ip.size_value,
+                    ip.size_unit,
+                    ip.price,
+                    ip.notes
+                FROM IngredientPurchases ip
+                JOIN PossibleIngredients pi
+                  ON pi.id = ip.ingredient_id
+                ORDER BY ip.purchase_date DESC, ip.id DESC
+                """
+            ).fetchall()
+        finally:
+            close_db_connection()
+
+        purchases = []
+        for row in purchase_rows:
+            size_value = row["size_value"]
+            size_unit = row["size_unit"]
+            size_ml = _convert_to_ml(size_value, size_unit)
+            price = row["price"]
+            price_per_ml = (price / size_ml) if (size_ml and price is not None) else None
+            price_per_oz = (
+                price_per_ml * UNIT_TO_ML["oz"] if price_per_ml is not None else None
+            )
+            purchases.append(
+                {
+                    "id": row["id"],
+                    "ingredient_id": row["ingredient_id"],
+                    "ingredient_name": row["ingredient_name"],
+                    "purchase_date": row["purchase_date"],
+                    "location": row["location"] or "",
+                    "size_value": size_value,
+                    "size_unit": size_unit,
+                    "size_value_display": _format_size_value(size_value),
+                    "size_unit_display": _display_unit(size_unit),
+                    "size_ml": size_ml,
+                    "price": price,
+                    "price_per_ml": price_per_ml,
+                    "price_per_oz": price_per_oz,
+                    "notes": row["notes"] or "",
+                }
+            )
+
+        return render_template(
+            "prices.html",
+            ingredients=ingredient_rows,
+            purchases=purchases,
+            purchase_units=PURCHASE_UNITS,
+            today=date.today().isoformat(),
+        )
 
     @app.route("/ingredient-purchase/<int:purchase_id>", methods=["DELETE"])
     def delete_ingredient_purchase(purchase_id):
