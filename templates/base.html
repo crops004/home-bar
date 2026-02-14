@@ -11,28 +11,39 @@
     <div id="toast" class="toast"></div>
     <!-- Mobile Bottom Nav -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-background-mid border-t border-border-muted z-50">
-        <div class="flex justify-around items-center py-2 text-xs text-text-muted">
-            <a href="{{ url_for('bar.bar') }}" class="flex flex-col items-center gap-0.5 w-14">
-                <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/></svg>
-                <span>Bar</span>
+        {% set current_endpoint = request.endpoint or '' %}
+        <div class="grid grid-cols-5 items-stretch py-0 text-xs text-text-muted">
+            <a href="{{ url_for('bar.bar') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint.startswith('bar.') %}text-logo{% else %}text-text-muted{% endif %}">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full">
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/></svg>
+                </span>
+                <span class="leading-none">Bar</span>
             </a>
-            <a href="{{ url_for('recipes.recipes') }}" class="flex flex-col items-center gap-0.5 w-14">
-                <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>
-                <span>Recipes</span>
+            <a href="{{ url_for('recipes.recipes') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint.startswith('recipes.') %}text-logo{% else %}text-text-muted{% endif %}">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full">
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>
+                </span>
+                <span class="leading-none">Recipes</span>
             </a>
-            <a href="{{ url_for('prices') }}" class="flex flex-col items-center gap-0.5 w-14">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 block mx-auto">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <span>Prices</span>
+            <a href="{{ url_for('prices') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'prices' %}text-logo{% else %}text-text-muted{% endif %}">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 block mx-auto">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </span>
+                <span class="leading-none">Prices</span>
             </a>
-            <a href="{{ url_for('manage_lists') }}" class="flex flex-col items-center gap-0.5 w-14">
-                <svg class="w-5 h-5 block mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-                <span>Lists</span>
+            <a href="{{ url_for('manage_lists') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'manage_lists' %}text-logo{% else %}text-text-muted{% endif %}">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full">
+                    <svg class="w-5 h-5 block mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+                </span>
+                <span class="leading-none">Lists</span>
             </a>
-            <a href="{{ url_for('possible_ingredients') }}" class="flex flex-col items-center gap-0.5 w-14 py-1">
-                <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5h4v-2a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v2z" /><path d="M14 3.5c0 1.626 .507 3.212 1.45 4.537l.05 .07a8.093 8.093 0 0 1 1.5 4.694v6.199a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-6.2c0 -1.682 .524 -3.322 1.5 -4.693l.05 -.07a7.823 7.823 0 0 0 1.45 -4.537" /><path d="M7 14.803a2.4 2.4 0 0 0 1 -.803a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 1 -.805" /></svg>
-                <span>Ingredients</span>
+            <a href="{{ url_for('possible_ingredients') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'possible_ingredients' %}text-logo{% else %}text-text-muted{% endif %}">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full">
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5h4v-2a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v2z" /><path d="M14 3.5c0 1.626 .507 3.212 1.45 4.537l.05 .07a8.093 8.093 0 0 1 1.5 4.694v6.199a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-6.2c0 -1.682 .524 -3.322 1.5 -4.693l.05 -.07a7.823 7.823 0 0 0 1.45 -4.537" /><path d="M7 14.803a2.4 2.4 0 0 0 1 -.803a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 1 -.805" /></svg>
+                </span>
+                <span class="leading-none">Ingredients</span>
             </a>
         </div>
     </nav>

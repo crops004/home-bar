@@ -859,4 +859,3 @@
   window.filterTable = filterTable;
   window.filterAllTables = filterAllTables;
 })();
-
