@@ -69,29 +69,21 @@
     </nav>
 
     <!-- Desktop Nav (hidden on mobile) -->
-    <div id="desktop-nav" class="hidden bg-background-dark sm:flex justify-between items-start gap-4 px-4 sticky top-0 z-50 pb-6 pt-4">
-        <!-- Left nav card -->
-        <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-1 ml-4">
+    <div id="desktop-nav" class="hidden bg-background-dark sm:flex justify-end items-start px-4 sticky top-0 z-50 pb-6 pt-4">
+        <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-1.5 mr-4">
             <div class="flex flex-wrap items-center gap-2 sm:gap-4 md:gap-6 mx-2 text-sm font-medium text-text-normal">
-                <a href="{{ url_for('bar.bar') }}">
-                    <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-10 w-auto block">
+                <a href="{{ url_for('bar.bar') }}" class="h-8 w-8 flex items-center justify-center rounded-full hover:bg-background-light">
+                    <img src="{{ url_for('static', filename='images/swizzle_logo.png') }}" alt="Swizzle Logo" class="h-8 w-auto block">
                 </a>
                 <a href="{{ url_for('bar.bar') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'bar.bar' %}text-logo{% endif %}">Bar</a>
                 <a href="{{ url_for('recipes.recipes') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'recipes.recipes' %}text-logo{% endif %}">Recipes</a>
-
-            </div>
-        </nav>
-
-        <!-- Right nav card -->
-        <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-2 mr-4">
-            <div class="flex flex-wrap items-center gap-2 sm:gap-4 md:gap-6 mx-2 text-sm font-medium text-text-normal">
                 <a href="{{ url_for('prices') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'prices' %}text-logo{% endif %}">Prices</a>
                 <a href="{{ url_for('manage_lists') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'manage_lists' %}text-logo{% endif %}">Lists</a>
                 <a href="{{ url_for('possible_ingredients') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light {% if request.endpoint == 'possible_ingredients' %}text-logo{% endif %}">Ingredients</a>
-                    {% if session.logged_in %}
-                        <a href="{{ url_for('logout') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Logout</a>
-                    {% else %}
-                        <a href="{{ url_for('login') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Login</a>
+                {% if session.logged_in %}
+                    <a href="{{ url_for('logout') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="px-2 py-1.5 rounded-full hover:bg-background-light">Login</a>
                 {% endif %}
             </div>
         </nav>
