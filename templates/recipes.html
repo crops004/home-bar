@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Recipe Collection{% endblock %}
 {% block content %}
-    <div class="px-4 sm:px-6 pt-4 sm:pt-0">
+    <div class="px-4 sm:px-6 pt-4 pb-28 sm:pt-0 sm:pb-10">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-3xl font-semibold text-text-normal">Recipe Collection</h1>
         <button
             type="button"
             onclick="openAddModal()"
-            class="inline-flex items-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+            class="inline-flex h-11 min-w-[11rem] items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
         >
             <span class="text-xl leading-none">+</span>
             Add New Recipe
@@ -45,14 +45,14 @@
 
     <!-- Recipe Cards -->
     {% if all_recipes %}
-    <div id="recipes-container" class="mt-6 space-y-8">
+    <div id="recipes-container" class="mt-6 space-y-4">
         {% for group in all_recipes | groupby('base_spirit_category') %}
         {% set spirit = ((group.grouper or '') | trim) | default('Unknown', true) %}
         {% set spirit_key = spirit.lower() %}
         {% set group_recipes = group.list | sort(attribute='drink', case_sensitive=False) %}
         {% set panel_id = 'recipes-section-' ~ loop.index %}
-        <section class="recipe-group rounded-2xl border border-border bg-background-mid shadow-lg" data-spirit="{{ spirit_key }}">
-            <button type="button" class="recipe-group-toggle flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-background-dark/80" data-target="{{ panel_id }}" aria-expanded="false">
+        <section class="recipe-group ui-card relative overflow-visible" data-spirit="{{ spirit_key }}">
+            <button type="button" class="recipe-group-toggle ui-card-header flex w-full items-center justify-between gap-3 px-4 py-3 text-left" data-target="{{ panel_id }}" aria-expanded="false">
                 <div class="flex flex-col">
                     <span class="text-xs uppercase tracking-wide text-text-muted">Base Spirit</span>
                     <span class="text-lg font-semibold text-text-normal">{{ spirit }}</span>
@@ -64,13 +64,13 @@
                     </svg>
                 </div>
             </button>
-            <div id="{{ panel_id }}" class="recipe-group-panel hidden border-t border-border bg-background-dark">
-                <div class="recipe-group-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div id="{{ panel_id }}" class="recipe-group-panel hidden border-t border-border bg-background-dark rounded-b-2xl overflow-hidden">
+                <div class="recipe-group-grid grid items-start p-4 sm:grid-cols-2 xl:grid-cols-3">
                 {% for recipe in group_recipes %}
                 {% set summary_spirit = (recipe.spirit_summary | default('', true)) | trim %}
                 {% set summary_ingredients = (recipe.ingredient_summary | default('', true)) | trim %}
                 <article
-                    class="recipe-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
+                    class="recipe-card ui-card ui-card-interactive relative flex flex-col"
                     data-drink="{{ recipe.drink|escape }}"
                     data-base-spirit="{{ recipe.base_spirit|default('', true)|escape }}"
                     data-base-category="{{ recipe.base_spirit_category|default(spirit, true)|escape }}"
@@ -81,7 +81,7 @@
                     <button
                         type="button"
                         aria-expanded="false"
-                        class="recipe-card-toggle w-full text-left p-4 flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-logo"
+                        class="recipe-card-toggle w-full text-left p-4 flex flex-col gap-3 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-logo"
                     >
                         <header class="flex justify-between items-start gap-3">
                             <h3 class="text-lg font-semibold text-text-normal truncate">{{ recipe.drink }}</h3>
@@ -90,7 +90,7 @@
                             {{ summary_spirit or 'No spirits listed' }}
                         </p>
                     </button>
-                    <div class="recipe-card-details hidden border-t border-border bg-background-dark p-4 text-sm text-text-normal">
+                    <div class="recipe-card-details hidden flex-1 border-t border-border bg-background-dark p-4 text-sm text-text-normal">
                         <p class="text-text-muted">Select to load details.</p>
                     </div>
                 </article>
@@ -458,6 +458,139 @@
             return summary;
         }
 
+        function getRecipeGridMetrics(grid) {
+            const gridStyle = window.getComputedStyle(grid);
+            const rowHeight = parseFloat(gridStyle.gridAutoRows) || 8;
+            let rowGap = parseFloat(gridStyle.rowGap);
+            if (!Number.isFinite(rowGap)) {
+                const gapTokens = String(gridStyle.gap || "").split(" ");
+                rowGap = parseFloat(gapTokens[0]);
+            }
+            if (!Number.isFinite(rowGap)) {
+                rowGap = 0;
+            }
+            return { rowHeight, rowGap, unit: rowHeight + rowGap };
+        }
+
+        function computeRecipeSpanFromHeight(height, metrics) {
+            const unit = metrics.unit;
+            if (unit <= 0) {
+                return 1;
+            }
+            let span = Math.max(1, Math.ceil((height + metrics.rowGap) / unit));
+            const allocatedHeight = (span * metrics.rowHeight) + ((span - 1) * metrics.rowGap);
+            if (allocatedHeight < height) {
+                span += 1;
+            }
+            return span;
+        }
+
+        function setRecipeCardSpan(card, span) {
+            card.style.gridRowEnd = `span ${Math.max(1, span)}`;
+        }
+
+        function getCurrentCardSpan(card) {
+            const raw = card.style.gridRowEnd || "";
+            const match = raw.match(/span\s+(\d+)/i);
+            if (!match) {
+                return null;
+            }
+            const parsed = Number(match[1]);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        }
+
+        function getBaselineCollapsedSpan(grid, metrics) {
+            const cards = Array.from(grid.querySelectorAll('.recipe-card'));
+            for (const card of cards) {
+                if (card === activeCard || card.classList.contains('hidden') || card.offsetParent === null) {
+                    continue;
+                }
+                const h = Math.ceil(card.getBoundingClientRect().height) + 2;
+                return computeRecipeSpanFromHeight(h, metrics);
+            }
+            return 1;
+        }
+
+        function updateRecipeCardSpan(card) {
+            if (!card || card.classList.contains('hidden') || card.offsetParent === null) {
+                return;
+            }
+            const grid = card.closest('.recipe-group-grid');
+            if (!grid) {
+                return;
+            }
+            const metrics = getRecipeGridMetrics(grid);
+
+            if (card !== activeCard) {
+                card.style.height = '';
+                const collapsedSpan = Math.max(1, getBaselineCollapsedSpan(grid, metrics));
+                setRecipeCardSpan(card, collapsedSpan);
+                return;
+            }
+
+            const cardHeight = Math.ceil(card.getBoundingClientRect().height) + 2;
+            const span = computeRecipeSpanFromHeight(cardHeight, metrics);
+            setRecipeCardSpan(card, span);
+        }
+
+        function updateRecipeGroupLayout(group) {
+            if (!group) {
+                return;
+            }
+            const panel = group.querySelector('.recipe-group-panel');
+            if (panel && panel.classList.contains('hidden')) {
+                return;
+            }
+            const cards = group.querySelectorAll('.recipe-card');
+            cards.forEach((card) => updateRecipeCardSpan(card));
+        }
+
+        function updateAllRecipeCardSpans() {
+            document.querySelectorAll('.recipe-group').forEach((group) => {
+                updateRecipeGroupLayout(group);
+            });
+        }
+
+        function syncExpandedCardSpan(card) {
+            if (!card || card !== activeCard || card.classList.contains('hidden')) {
+                return;
+            }
+
+            const grid = card.closest('.recipe-group-grid');
+            if (!grid) {
+                return;
+            }
+
+            card.style.height = '';
+            const metrics = getRecipeGridMetrics(grid);
+            const naturalHeight = Math.ceil(card.getBoundingClientRect().height) + 2;
+            const naturalSpan = computeRecipeSpanFromHeight(naturalHeight, metrics);
+            setRecipeCardSpan(card, naturalSpan);
+        }
+
+        let recipeCardResizeObserver = null;
+        function initRecipeCardResizeObserver() {
+            if (!window.ResizeObserver) {
+                return;
+            }
+            if (recipeCardResizeObserver) {
+                recipeCardResizeObserver.disconnect();
+            }
+            recipeCardResizeObserver = new ResizeObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.target === activeCard) {
+                        syncExpandedCardSpan(entry.target);
+                    } else {
+                        updateRecipeCardSpan(entry.target);
+                    }
+                });
+                requestAnimationFrame(updateAllRecipeCardSpans);
+            });
+            document.querySelectorAll('.recipe-card').forEach((card) => {
+                recipeCardResizeObserver.observe(card);
+            });
+        }
+
         function updateViewButtons() {
             document.querySelectorAll('.view-toggle').forEach((button) => {
                 const isActive = button.dataset.view === activeView;
@@ -542,6 +675,8 @@
                 }
                 group.classList.toggle('hidden', visibleCards.length === 0);
             });
+
+            requestAnimationFrame(updateAllRecipeCardSpans);
         }
 
         function resetRecipeFilters() {
@@ -571,6 +706,10 @@
                     if (chevron) {
                         chevron.style.transform = expanded ? '' : 'rotate(180deg)';
                     }
+                    requestAnimationFrame(() => {
+                        const group = button.closest('.recipe-group');
+                        updateRecipeGroupLayout(group);
+                    });
                 });
             });
         }
@@ -630,9 +769,26 @@
 
             initializeRecipeCards();
             initRecipeAccordion();
+            initRecipeCardResizeObserver();
             updateViewButtons();
             updateSpiritButtons();
             applyRecipeFilters();
+            requestAnimationFrame(updateAllRecipeCardSpans);
+
+            window.addEventListener('resize', () => {
+                if (activeCard) {
+                    syncExpandedCardSpan(activeCard);
+                }
+                requestAnimationFrame(updateAllRecipeCardSpans);
+            });
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => {
+                    if (activeCard) {
+                        syncExpandedCardSpan(activeCard);
+                    }
+                    requestAnimationFrame(updateAllRecipeCardSpans);
+                });
+            }
 
             document.querySelectorAll('.view-toggle').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -831,12 +987,18 @@
                 toggle.setAttribute('aria-expanded', 'false');
             }
             card.classList.remove('ring-2', 'ring-logo');
+            card.classList.remove('is-active');
             if (activeCard === card) {
                 activeCard = null;
             }
             if (currentDrink === card.dataset.drink) {
                 currentDrink = null;
             }
+            card.style.height = '';
+            requestAnimationFrame(() => {
+                updateRecipeCardSpan(card);
+                updateAllRecipeCardSpans();
+            });
         }
 
         function renderRecipeDetails(card, data) {
@@ -882,25 +1044,29 @@
             const notes = data.notes || 'None';
 
             details.innerHTML = `
-                <div class="space-y-4">
-                    <div>
+                <div class="recipe-details-stack" data-details-stack>
+                    <section class="recipe-details-block">
                         <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Ingredients</p>
                         <ul class="space-y-1">${ingredientsHtml}</ul>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs uppercase tracking-wide text-text-muted">
+                    </section>
+                    <section class="recipe-details-block">
+                        <div class="grid grid-cols-2 gap-2 text-xs uppercase tracking-wide text-text-muted">
                         <span>Glass</span><span class="text-sm text-text-normal">${glass}</span>
                         <span>Garnish</span><span class="text-sm text-text-normal">${garnish}</span>
                         <span>Method</span><span class="text-sm text-text-normal">${method}</span>
                         <span>Ice</span><span class="text-sm text-text-normal">${ice}</span>
-                    </div>
-                    <div>
+                        </div>
+                    </section>
+                    <section class="recipe-details-block">
                         <p class="text-xs uppercase tracking-wide text-text-muted mb-1">Notes</p>
                         <p class="text-sm text-text-normal whitespace-pre-wrap">${notes}</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3 pt-2">
+                    </section>
+                    <section class="recipe-details-block">
+                        <div class="flex flex-wrap gap-3">
                         <button type="button" class="recipe-card-edit rounded-full bg-logo px-4 py-2 text-light-text-normal text-sm hover:ring-2 hover:ring-logo transition">Edit</button>
                         <button type="button" class="recipe-card-delete rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition">Delete</button>
-                    </div>
+                        </div>
+                    </section>
                 </div>
             `;
 
@@ -924,6 +1090,12 @@
                     }
                 });
             }
+
+            requestAnimationFrame(() => {
+                syncExpandedCardSpan(card);
+                updateRecipeCardSpan(card);
+                updateAllRecipeCardSpans();
+            });
         }
 
         function loadRecipeDetails(card) {
@@ -951,6 +1123,11 @@
                     card.dataset.baseCategory = resolvedCategory;
                     renderRecipeDetails(card, data);
                     card.dataset.loaded = 'true';
+                    requestAnimationFrame(() => {
+                        syncExpandedCardSpan(card);
+                        updateRecipeCardSpan(card);
+                        updateAllRecipeCardSpans();
+                    });
                 })
                 .catch(error => {
                     console.error('Error fetching recipe:', error);
@@ -972,6 +1149,7 @@
             activeCard = card;
             currentDrink = card.dataset.drink;
             card.classList.add('ring-2', 'ring-logo');
+            card.classList.add('is-active');
             const toggle = card.querySelector('.recipe-card-toggle');
             if (toggle) {
                 toggle.setAttribute('aria-expanded', 'true');
@@ -983,13 +1161,34 @@
                     loadRecipeDetails(card);
                 }
             }
+            requestAnimationFrame(() => {
+                syncExpandedCardSpan(card);
+                updateRecipeCardSpan(card);
+                updateAllRecipeCardSpans();
+            });
         }
 
         function initializeRecipeCards() {
+            const cards = document.querySelectorAll('.recipe-card');
+            cards.forEach((card) => {
+                card.addEventListener('click', (event) => {
+                    if (
+                        event.target.closest('.recipe-card-toggle') ||
+                        event.target.closest('.recipe-card-edit') ||
+                        event.target.closest('.recipe-card-delete') ||
+                        event.target.closest('a, input, select, textarea, button')
+                    ) {
+                        return;
+                    }
+                    toggleRecipeCard(card);
+                });
+            });
+
             const toggles = document.querySelectorAll('.recipe-card-toggle');
             toggles.forEach(toggle => {
                 toggle.setAttribute('aria-expanded', 'false');
-                toggle.addEventListener('click', () => {
+                toggle.addEventListener('click', (event) => {
+                    event.stopPropagation();
                     const card = toggle.closest('.recipe-card');
                     toggleRecipeCard(card);
                 });
@@ -1446,25 +1645,3 @@
     </div>
 
 {% endblock %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

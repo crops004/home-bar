@@ -8,72 +8,60 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Add Item and Filter Buttons -->
-    <div class="sticky top-0 sm:top-[90px] z-40 bg-background-dark shadow-md p-4">
-        <div class="flex justify-between items-center px-4 py-2 pb-6 border-b border-border-muted mb-6">
-            <h2 class="bg-background-mid border border-border rounded-full shadow-2xl px-4 py-2 ml-4 text-sm font-medium text-text-normal">Bar Contents</h2>
-            <div class="flex justify-end pr-4 gap-2" id="action-buttons">
-                <!-- Add Item Button -->
-                <button onclick="openAddModal()"
-                        class="group bg-background-mid border border-border p-2 rounded-full shadow hover:scale-105 transition-transform"
-                        title="Add Item">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        stroke="currentColor"
-                        class="w-5 h-5 stroke-text-muted group-hover:stroke-logo transition-colors">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                </button>
-
-                <!-- Filter Button -->
-                <button onclick="openFilterModal()" 
-                        class="group bg-background-mid border border-border p-2 rounded-full shadow hover:scale-105 transition-transform" 
-                        title="Filter Items">
-                    <svg xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 24 24" 
-                        fill="currentColor" 
-                        class="w-5 h-5 text-text-muted group-hover:text-logo transition-colors">
-                            <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0 1 12 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 0 1 1.541 1.836v1.044a3 3 0 0 1-.879 2.121l-6.182 6.182a1.5 1.5 0 0 0-.439 1.061v2.927a3 
-                                3 0 0 1-1.658 2.684l-1.757.878A.75.75 0 0 1 9.75 21v-5.818a1.5 1.5 0 0 0-.44-1.06L3.13 7.938a3 3 0 0 1-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836Z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-
-                <!-- Clear Filter Button -->
-                <button id="clear-filter-btn" onclick="clearFilter()" class="hidden bg-yellow-900 p-2 rounded-full shadow hover:bg-yellow-950 hover:scale-105 transition-transform" title="Clear Filter">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 stroke-white">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                    </svg>
+    <div class="px-4 sm:px-6 pt-4 pb-28 sm:pt-0 sm:pb-10">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 class="text-3xl font-semibold text-text-normal">Bar Contents</h1>
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    onclick="openAddModal()"
+                    class="inline-flex h-11 min-w-[11rem] items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+                    title="Add Item"
+                >
+                    <span class="text-xl leading-none">+</span>
+                    Add Item
                 </button>
             </div>
         </div>
 
-
-        <!-- Filter Buttons -->
-        <div class="flex flex-wrap items-center gap-2 px-2">
-            <button class="filter-btn" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="spirit">Spirits</button>
-            <button class="filter-btn" data-filter="modifier">Modifiers & Mixers</button>
-            <button class="filter-btn" data-filter="gin">Gin</button>
-            <button class="filter-btn" data-filter="whiskey">Whiskey</button>
-            <button class="filter-btn" data-filter="rum">Rum</button>
-            <button class="filter-btn" data-filter="tequila">Tequila</button>
+        <div class="mt-6 space-y-3">
+            <div class="flex flex-wrap items-center gap-3 bg-background-mid/40 border border-border rounded-2xl p-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs uppercase tracking-wide text-text-muted">Category</span>
+                    <button class="filter-btn" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="spirit">Spirits</button>
+                    <button class="filter-btn" data-filter="modifier">Modifiers & Mixers</button>
+                    <button class="filter-btn" data-filter="gin">Gin</button>
+                    <button class="filter-btn" data-filter="whiskey">Whiskey</button>
+                    <button class="filter-btn" data-filter="rum">Rum</button>
+                    <button class="filter-btn" data-filter="tequila">Tequila</button>
+                </div>
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3 sm:ml-auto">
+                    <input
+                        type="text"
+                        id="filter-all"
+                        placeholder="Search by name or category..."
+                        oninput="filterAllTables()"
+                        class="modal-input w-full sm:w-60"
+                    />
+                    <button type="button" id="clear-filter-btn" onclick="clearFilter()" class="hidden inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition">
+                        Clear
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
 
     {% if items %}
     {% set grouped_items = items | sort(attribute='category') | groupby('category') %}
-    <div id="bar-accordion" class="mt-6 space-y-4 px-4">
+    <div id="bar-accordion" class="mt-6 space-y-4">
         {% for group in grouped_items %}
         {% set category = group.grouper or 'Uncategorized' %}
         {% set panel_id = 'bar-section-' ~ loop.index %}
         {% set item_count = group.list | length %}
-        <section class="bar-category rounded-2xl border border-border bg-background-mid shadow-lg" data-category="{{ category }}">
+        <section class="bar-category ui-card" data-category="{{ category }}">
             <button
                 type="button"
-                class="bar-category-toggle flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-background-dark/80"
+                class="bar-category-toggle ui-card-header flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 data-target="{{ panel_id }}"
                 aria-expanded="true"
             >
@@ -96,7 +84,7 @@
                 </div>
                 {% for item in group.list | sort(attribute='name') %}
                 <div
-                    class="bar-row grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-sm transition hover:bg-background-mid/60"
+                    class="bar-row grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-logo/10"
                     data-name="{{ item['name'] }}"
                     data-category="{{ item['category'] or '' }}"
                     data-subcategory="{{ item['sub_category'] or '' }}"
@@ -122,10 +110,11 @@
         </section>
         {% endfor %}
     </div>
-    <p id="bar-no-results" class="hidden px-4 py-6 text-center text-text-muted">No items match your current filters.</p>
+    <p id="bar-no-results" class="hidden py-6 text-center text-text-muted">No items match your current filters.</p>
     {% else %}
-        <p class="px-4 py-6 text-center text-text-muted">You have not added anything to your bar yet. Use the + button above to get started.</p>
+        <p class="py-6 text-center text-text-muted">You have not added anything to your bar yet. Use the + button above to get started.</p>
     {% endif %}
+    </div>
     
     <!-- Add Item Modal -->
     <div id="add-modal" class="hidden fixed inset-0 bg-black/60 z-40 items-center justify-center px-4 transition-opacity duration-200">
@@ -203,28 +192,6 @@
         </div>
     </div>
     
-    <!-- Filter Modal -->
-    <div id="filter-modal" class="hidden fixed inset-0 bg-black/60 z-50 items-start justify-center px-4 py-20 transition-opacity duration-200">
-        <div class="modal-box relative w-full max-w-md rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl transition-all duration-200 opacity-0 translate-y-[-0.5rem]">
-            <button onclick="closeFilterModal()" class="absolute top-3 right-3 text-text-muted hover:text-logo transition-colors" aria-label="Close">
-                &times;
-            </button>
-            <h2 class="text-lg font-semibold mb-4">Filter All Items</h2>
-            <input
-                type="text"
-                id="filter-all"
-                placeholder="Filter by name, category, or subcategory..."
-                onkeyup="filterAllTables()"
-                class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo placeholder:text-text-muted transition"
-            />
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" onclick="closeFilterModal()" class="rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- New Ingredient Modal -->
     <div id="new-ingredient-modal" data-subcategories='{{ lists["subcategories"] | tojson }}' class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center px-4 transition-opacity duration-200">
         <div class="modal-box relative w-full max-w-lg transform scale-95 opacity-0 transition-all duration-200 rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl">

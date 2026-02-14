@@ -47,7 +47,7 @@
     <div id="ingredient-grid" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {% for ingredient in ingredients %}
         <article
-            class="ingredient-card bg-background-mid border border-border rounded-2xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl"
+            class="ingredient-card ui-card ui-card-interactive"
             data-id="{{ ingredient['id'] }}"
             data-name="{{ ingredient['name'] }}"
             data-category="{{ ingredient['category'] or '' }}"

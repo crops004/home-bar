@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  @supports not (scrollbar-gutter: stable) {
+    html {
+      overflow-y: scroll;
+    }
+  }
+
   /* Keep form controls at 16px+ to prevent iOS zooming on focus */
   input,
   select,
@@ -26,8 +36,8 @@
     @apply flex items-center justify-center;
   }
   .filter-btn {
-        @apply bg-background-light border border-border text-[.65rem] px-3 py-1  rounded-full hover:bg-background-mid transition;
-    }
+    @apply inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition;
+  }
 }
   
 @theme {
@@ -63,6 +73,55 @@
 }
 
 @layer components {
+  .ui-card {
+    @apply rounded-2xl border border-border bg-background-mid shadow-lg overflow-hidden;
+  }
+
+  .ui-card-interactive {
+    @apply transition-[border-color,box-shadow,background-color] duration-200;
+  }
+
+  .ui-card-interactive:hover,
+  .ui-card-interactive:focus-within {
+    @apply border-logo ring-1 ring-logo/40;
+  }
+
+  .ui-card-header {
+    @apply transition-colors duration-200 rounded-t-2xl;
+  }
+
+  .ui-card-header:hover {
+    @apply bg-logo/10;
+  }
+
+  .ui-card-header[aria-expanded="false"] {
+    @apply rounded-b-2xl;
+  }
+
+  .recipe-group-grid {
+    gap: 1rem;
+    grid-auto-flow: dense;
+    grid-auto-rows: 8px;
+    align-content: start;
+  }
+
+  .recipe-card {
+    @apply self-start;
+    z-index: 1;
+  }
+
+  .recipe-card.is-active {
+    z-index: 20;
+  }
+
+  .recipe-card-toggle {
+    min-height: 88px;
+  }
+
+  .recipe-details-stack {
+    @apply flex flex-col gap-6;
+  }
+
   .modal-backdrop {
     @apply fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4;
   }
