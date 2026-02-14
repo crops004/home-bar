@@ -7,7 +7,7 @@
         <button
             type="button"
             onclick="openAddModal()"
-            class="inline-flex h-11 min-w-[11rem] items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+            class="inline-flex h-11 w-48 items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
         >
             <span class="text-xl leading-none">+</span>
             Add New Recipe
@@ -107,21 +107,21 @@
 
     <!-- Add Recipe Modal -->
     <div id="add-modal" class="modal-backdrop hidden">
-        <div class="modal-panel">
+        <div class="modal-panel max-h-[92vh]">
             <div class="modal-header">
                 <h2 class="text-xl font-semibold text-text-normal">Add New Recipe</h2>
                 <button type="button" onclick="closeAddModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
             </div>
-            <form id="add-recipe-form" method="post" class="flex flex-col max-h-[80vh]">
-                <div class="modal-body space-y-4">
+            <form id="add-recipe-form" method="post" class="flex flex-col max-h-[90vh]">
+                <div class="modal-body space-y-3">
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Drink Name</span>
-                            <input type="text" id="add-drink" name="drink" required class="modal-input" />
+                        <label class="flex items-center gap-3 text-sm sm:col-span-2">
+                            <span class="modal-label w-24 shrink-0 whitespace-nowrap">Drink Name</span>
+                            <input type="text" id="add-drink" name="drink" required class="modal-input min-w-0 flex-1" />
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Base Spirit</span>
-                            <div class="base-spirit-field relative w-full">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Base Spirit</span>
+                            <div class="base-spirit-field relative min-w-0 flex-1">
                                 <input type="text" id="add-base_spirit-input" placeholder="Type to filter base spirits..." oninput="filterBaseSpirit('add')" class="modal-input w-full" autocomplete="off" />
                                 <div id="add-base_spirit-dropdown" class="ingredient-dropdown hidden" role="listbox"></div>
                             </div>
@@ -137,31 +137,31 @@
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Glass</span>
-                            <select id="add-glass" name="glass" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Glass</span>
+                            <select id="add-glass" name="glass" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for glass in lists['glass_types'] %}
                                     <option value="{{ glass }}">{{ glass }}</option>
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Garnish</span>
-                            <input type="text" id="add-garnish" name="garnish" class="modal-input" />
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Garnish</span>
+                            <input type="text" id="add-garnish" name="garnish" class="modal-input min-w-0 flex-1" />
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Method</span>
-                            <select id="add-method" name="method" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Method</span>
+                            <select id="add-method" name="method" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for method in lists['methods'] %}
                                     <option value="{{ method }}">{{ method }}</option>
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Ice</span>
-                            <select id="add_ice" name="ice" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Ice</span>
+                            <select id="add_ice" name="ice" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for ice in lists['ice_options'] %}
                                     <option value="{{ ice }}">{{ ice }}</option>
@@ -169,9 +169,9 @@
                             </select>
                         </label>
                     </div>
-                    <label class="flex flex-col gap-1 text-sm">
-                        <span class="modal-label">Notes</span>
-                        <textarea id="add-notes" name="notes" rows="3" class="modal-input"></textarea>
+                    <label class="flex items-start gap-3 text-sm">
+                        <span class="modal-label w-24 shrink-0 pt-2">Notes</span>
+                        <textarea id="add-notes" name="notes" rows="3" class="modal-input min-w-0 flex-1"></textarea>
                     </label>
 
                     <div class="space-y-2">
@@ -204,22 +204,22 @@
         </div>
     </div>    <!-- Edit Recipe Modal -->
     <div id="edit-modal" class="modal-backdrop hidden">
-        <div class="modal-panel">
+        <div class="modal-panel max-h-[92vh]">
             <div class="modal-header">
                 <h2 class="text-xl font-semibold text-text-normal">Edit Recipe</h2>
                 <button type="button" onclick="closeEditModal()" class="text-text-muted hover:text-text-normal text-2xl leading-none">&times;</button>
             </div>
-            <form id="edit-recipe-form" class="flex flex-col max-h-[80vh]">
-                <div class="modal-body space-y-4">
+            <form id="edit-recipe-form" class="flex flex-col max-h-[90vh]">
+                <div class="modal-body space-y-3">
                     <input type="hidden" id="edit-original-drink" name="original_drink">
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Drink Name</span>
-                            <input type="text" id="edit-drink" name="drink" required class="modal-input" />
+                        <label class="flex items-center gap-3 text-sm sm:col-span-2">
+                            <span class="modal-label w-24 shrink-0 whitespace-nowrap">Drink Name</span>
+                            <input type="text" id="edit-drink" name="drink" required class="modal-input min-w-0 flex-1" />
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Base Spirit</span>
-                            <div class="base-spirit-field relative w-full">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Base Spirit</span>
+                            <div class="base-spirit-field relative min-w-0 flex-1">
                                 <input type="text" id="edit-base_spirit-input" placeholder="Type to filter base spirits..." oninput="filterBaseSpirit('edit')" class="modal-input w-full" autocomplete="off" />
                                 <div id="edit-base_spirit-dropdown" class="ingredient-dropdown hidden" role="listbox"></div>
                             </div>
@@ -235,31 +235,31 @@
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Glass</span>
-                            <select id="edit-glass" name="glass" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Glass</span>
+                            <select id="edit-glass" name="glass" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for glass in lists['glass_types'] %}
                                     <option value="{{ glass }}">{{ glass }}</option>
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Garnish</span>
-                            <input type="text" id="edit-garnish" name="garnish" class="modal-input" />
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Garnish</span>
+                            <input type="text" id="edit-garnish" name="garnish" class="modal-input min-w-0 flex-1" />
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Method</span>
-                            <select id="edit-method" name="method" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Method</span>
+                            <select id="edit-method" name="method" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for method in lists['methods'] %}
                                     <option value="{{ method }}">{{ method }}</option>
                                 {% endfor %}
                             </select>
                         </label>
-                        <label class="flex flex-col gap-1 text-sm">
-                            <span class="modal-label">Ice</span>
-                            <select id="edit_ice" name="ice" class="modal-input">
+                        <label class="flex items-center gap-3 text-sm">
+                            <span class="modal-label w-24 shrink-0">Ice</span>
+                            <select id="edit_ice" name="ice" class="modal-input min-w-0 flex-1">
                                 <option value="">None</option>
                                 {% for ice in lists['ice_options'] %}
                                     <option value="{{ ice }}">{{ ice }}</option>
@@ -267,9 +267,9 @@
                             </select>
                         </label>
                     </div>
-                    <label class="flex flex-col gap-1 text-sm">
-                        <span class="modal-label">Notes</span>
-                        <textarea id="edit-notes" name="notes" rows="3" class="modal-input"></textarea>
+                    <label class="flex items-start gap-3 text-sm">
+                        <span class="modal-label w-24 shrink-0 pt-2">Notes</span>
+                        <textarea id="edit-notes" name="notes" rows="3" class="modal-input min-w-0 flex-1"></textarea>
                     </label>
 
                     <div class="space-y-2">
@@ -294,22 +294,22 @@
             </div>
             <form id="add-ingredient-form" class="flex flex-col max-h-[70vh]">
                 <div class="modal-body space-y-4 text-sm">
-                    <label class="flex flex-col gap-1">
-                        <span class="modal-label">Ingredient Name</span>
-                        <input type="text" id="new-ingredient-name" name="name" placeholder="Ingredient Name" required readonly class="modal-input" />
+                    <label class="flex items-center gap-3">
+                        <span class="modal-label w-28 shrink-0">Ingredient Name</span>
+                        <input type="text" id="new-ingredient-name" name="name" placeholder="Ingredient Name" required readonly class="modal-input min-w-0 flex-1" />
                     </label>
-                    <label class="flex flex-col gap-1">
-                        <span class="modal-label">Category</span>
-                        <select name="category" id="new-ingredient-category" required class="modal-input">
+                    <label class="flex items-center gap-3">
+                        <span class="modal-label w-28 shrink-0">Category</span>
+                        <select name="category" id="new-ingredient-category" required class="modal-input min-w-0 flex-1">
                             <option value="" disabled selected>Select Category</option>
                             {% for category in lists['categories'] %}
                                 <option value="{{ category }}">{{ category }}</option>
                             {% endfor %}
                         </select>
                     </label>
-                    <label class="flex flex-col gap-1">
-                        <span class="modal-label">Subcategory</span>
-                        <select name="sub_category" id="new-ingredient-subcategory" class="modal-input">
+                    <label class="flex items-center gap-3">
+                        <span class="modal-label w-28 shrink-0">Subcategory</span>
+                        <select name="sub_category" id="new-ingredient-subcategory" class="modal-input min-w-0 flex-1">
                             <option value="">None</option>
                         </select>
                     </label>
@@ -1227,7 +1227,23 @@
             if (!list) {
                 return;
             }
-            list.insertAdjacentHTML('beforeend', makeIngredientRowMarkup(count));
+            if (modalType === 'add') {
+                list.insertAdjacentHTML('afterbegin', makeIngredientRowMarkup(count));
+            } else {
+                list.insertAdjacentHTML('beforeend', makeIngredientRowMarkup(count));
+            }
+            const newRow = modalType === 'add' ? list.firstElementChild : list.lastElementChild;
+            if (!newRow) {
+                return;
+            }
+            const ingredientInput = newRow.querySelector(`input[name="ingredient_${count}"]`);
+            if (ingredientInput) {
+                ingredientInput.focus();
+            }
+            newRow.classList.add('ring-1', 'ring-logo/50');
+            window.setTimeout(() => {
+                newRow.classList.remove('ring-1', 'ring-logo/50');
+            }, 800);
         }
 
         function removeIngredient(button) {

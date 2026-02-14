@@ -16,50 +16,73 @@
         </div>
 
         <div class="mt-6 rounded-2xl border border-border bg-background-mid p-4 sm:p-5">
-            <h2 class="text-lg font-semibold text-text-normal">Add Purchase</h2>
-            <form method="post" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <label class="flex flex-col gap-1 text-sm lg:col-span-2">
-                    <span class="modal-label">Ingredient</span>
-                    <select name="ingredient_id" required class="modal-input">
-                        <option value="">Select ingredient</option>
-                        {% for ingredient in ingredients %}
-                            <option value="{{ ingredient['id'] }}">{{ ingredient['name'] }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="modal-label">Date</span>
-                    <input type="date" name="purchase_date" required class="modal-input" value="{{ today }}" />
-                </label>
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="modal-label">Size</span>
-                    <input type="number" name="size_value" step="0.01" min="0" required class="modal-input" placeholder="750" />
-                </label>
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="modal-label">Unit</span>
-                    <select name="size_unit" required class="modal-input">
-                        <option value="">Select unit</option>
-                        {% for unit in purchase_units %}
-                            <option value="{{ unit['value'] }}">{{ unit['label'] }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="modal-label">Price (USD)</span>
-                    <input type="number" name="price" step="0.01" min="0" required class="modal-input" placeholder="29.99" />
-                </label>
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="modal-label">Location (optional)</span>
-                    <input type="text" name="location" class="modal-input" placeholder="Store or website" />
-                </label>
-                <label class="flex flex-col gap-1 text-sm lg:col-span-3">
-                    <span class="modal-label">Notes (optional)</span>
-                    <input type="text" name="notes" class="modal-input" placeholder="Sale, bottle notes, etc." />
-                </label>
-                <div class="lg:col-span-3 flex justify-end">
-                    <button type="submit" class="modal-button-primary">Save Purchase</button>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-text-normal">Add Purchase</h2>
+                    <p class="text-sm text-text-muted">Use + to expand and add a new purchase.</p>
                 </div>
-            </form>
+                <button
+                    id="purchase-form-toggle"
+                    type="button"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-text-normal hover:bg-background-light transition"
+                    aria-expanded="false"
+                    aria-controls="purchase-form-panel"
+                    title="Toggle Add Purchase Form"
+                >
+                    <svg id="purchase-toggle-plus" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
+                        <path d="M10 4.75a.75.75 0 0 1 .75.75v3.75h3.75a.75.75 0 0 1 0 1.5h-3.75v3.75a.75.75 0 0 1-1.5 0v-3.75H5.5a.75.75 0 0 1 0-1.5h3.75V5.5a.75.75 0 0 1 .75-.75Z" />
+                    </svg>
+                    <svg id="purchase-toggle-minus" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 hidden">
+                        <path d="M5.75 10a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75Z" />
+                    </svg>
+                    <span class="sr-only">Toggle add purchase form</span>
+                </button>
+            </div>
+            <div id="purchase-form-panel" class="hidden mt-4">
+                <form method="post" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <label class="flex flex-col gap-1 text-sm lg:col-span-2">
+                        <span class="modal-label">Ingredient</span>
+                        <select name="ingredient_id" required class="modal-input">
+                            <option value="">Select ingredient</option>
+                            {% for ingredient in ingredients %}
+                                <option value="{{ ingredient['id'] }}">{{ ingredient['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Date</span>
+                        <input type="date" name="purchase_date" required class="modal-input" value="{{ today }}" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Size</span>
+                        <input type="number" name="size_value" step="0.01" min="0" required class="modal-input" placeholder="750" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Unit</span>
+                        <select name="size_unit" required class="modal-input">
+                            <option value="">Select unit</option>
+                            {% for unit in purchase_units %}
+                                <option value="{{ unit['value'] }}">{{ unit['label'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Price (USD)</span>
+                        <input type="number" name="price" step="0.01" min="0" required class="modal-input" placeholder="29.99" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Location (optional)</span>
+                        <input type="text" name="location" class="modal-input" placeholder="Store or website" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm lg:col-span-3">
+                        <span class="modal-label">Notes (optional)</span>
+                        <input type="text" name="notes" class="modal-input" placeholder="Sale, bottle notes, etc." />
+                    </label>
+                    <div class="lg:col-span-3 flex justify-end">
+                        <button type="submit" class="modal-button-primary">Save Purchase</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div class="mt-6 space-y-3">
@@ -102,4 +125,34 @@
             {% endif %}
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('purchase-form-toggle');
+            const panel = document.getElementById('purchase-form-panel');
+            const plusIcon = document.getElementById('purchase-toggle-plus');
+            const minusIcon = document.getElementById('purchase-toggle-minus');
+
+            if (!toggle || !panel || !plusIcon || !minusIcon) {
+                return;
+            }
+
+            const setState = (expanded) => {
+                panel.classList.toggle('hidden', !expanded);
+                plusIcon.classList.toggle('hidden', expanded);
+                minusIcon.classList.toggle('hidden', !expanded);
+                toggle.setAttribute('aria-expanded', String(expanded));
+            };
+
+            setState(false);
+
+            toggle.addEventListener('click', () => {
+                const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+                setState(expanded);
+            });
+        });
+    </script>
 {% endblock %}

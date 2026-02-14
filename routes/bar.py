@@ -27,22 +27,36 @@ def bar():
     conn = get_db_connection()
     try:
         if request.method == 'POST':
-            name = request.form['name']
-            # Flip in_bar=true on the matching possible ingredient (case-insensitive)
-            cursor = conn.execute(
+            submitted_name = (request.form.get('name') or '').strip()
+            existing = conn.execute(
+                """
+                SELECT name, in_bar
+                FROM possibleingredients
+                WHERE lower(name) = lower(%s)
+                LIMIT 1
+                """,
+                (submitted_name,),
+            ).fetchone()
+
+            if not existing:
+                flash(f'"{submitted_name}" not found in Possible Ingredients.', "error")
+                return redirect(url_for("bar.bar"))
+
+            canonical_name = existing['name']
+            if existing['in_bar']:
+                flash(f"{canonical_name} already exists in your bar.", "info")
+                return redirect(url_for("bar.bar"))
+
+            conn.execute(
                 """
                 UPDATE possibleingredients
                 SET in_bar = TRUE
                 WHERE lower(name) = lower(%s)
                 """,
-                (name,),
+                (submitted_name,),
             )
             conn.commit()
-
-            if cursor.rowcount == 0:
-                flash(f'"{name}" not found in Possible Ingredients.', "error")
-            else:
-                flash(f"{name} added successfully to your bar.", "success")
+            flash(f"{canonical_name} added successfully to your bar.", "success")
 
             return redirect(url_for("bar.bar"))
             

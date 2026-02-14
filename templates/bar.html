@@ -15,7 +15,7 @@
                 <button
                     type="button"
                     onclick="openAddModal()"
-                    class="inline-flex h-11 min-w-[11rem] items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
+                    class="inline-flex h-11 w-48 items-center justify-center gap-2 rounded-full bg-logo px-5 py-2 text-sm font-medium text-light-text-normal hover:ring-2 hover:ring-logo transition"
                     title="Add Item"
                 >
                     <span class="text-xl leading-none">+</span>
@@ -84,24 +84,27 @@
                 </div>
                 {% for item in group.list | sort(attribute='name') %}
                 <div
-                    class="bar-row grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-logo/10"
+                    class="bar-row flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors hover:bg-logo/10 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center"
                     data-name="{{ item['name'] }}"
                     data-category="{{ item['category'] or '' }}"
                     data-subcategory="{{ item['sub_category'] or '' }}"
                     data-type="{{ item['type'] }}"
                 >
-                    <div class="font-medium text-text-normal">{{ item['name'] }}</div>
-                    <div class="hidden sm:block text-text-muted">{{ item['sub_category'] or '—' }}</div>
-                    <div class="flex items-center justify-between sm:justify-end gap-3">
-                        <span class="sm:hidden text-xs text-text-muted">{{ item['category'] or 'Uncategorized' }}{% if item['sub_category'] %} • {{ item['sub_category'] }}{% endif %}</span>
+                    <div class="min-w-0 flex items-baseline gap-2">
+                        <span class="truncate font-medium text-text-normal">{{ item['name'] }}</span>
+                        {% if item['sub_category'] %}
+                        <span class="sm:hidden truncate text-xs text-text-muted">{{ item['sub_category'] }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:block text-text-muted">{{ item['sub_category'] or '-' }}</div>
+                    <div class="flex shrink-0 items-center sm:justify-end gap-3">
                         <button 
-                            class="delete-item inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-text-muted hover:bg-background-light transition"
+                            class="delete-item inline-flex items-center rounded-full border border-border p-2 text-xs text-text-muted hover:bg-background-light transition"
                             data-name="{{ item['name'] }}"
-                            title="Delete">
+                            title="Delete" aria-label="Delete">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
                                 <path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm2.78-4.22a.75.75 0 0 1-1.06 0L8 9.06l-1.72 1.72a.75.75 0 1 1-1.06-1.06L6.94 8 5.22 6.28a.75.75 0 0 1 1.06-1.06L8 6.94l1.72-1.72a.75.75 0 1 1 1.06 1.06L9.06 8l1.72 1.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
                             </svg>
-                            <span class="sm:hidden">Delete</span>
                         </button>
                     </div>
                 </div>
@@ -117,59 +120,56 @@
     </div>
     
     <!-- Add Item Modal -->
-    <div id="add-modal" class="hidden fixed inset-0 bg-black/60 z-40 items-center justify-center px-4 transition-opacity duration-200">
-        <div class="modal-box relative w-full max-w-lg transform scale-95 opacity-0 transition-all duration-200 rounded-2xl border border-border bg-background-mid text-text-normal shadow-2xl">
-            <button onclick="closeAddModal()" class="absolute top-3 right-3 text-text-muted hover:text-logo transition-colors" aria-label="Close">
-                &times;
-            </button>
-            <h2 class="text-xl font-semibold mb-4">Add to Bar</h2>
-            <form method="post" class="space-y-4" onsubmit="return submitWithFields(event)">
-                <div class="space-y-2">
-                    <label for="name-input" class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Ingredient</label>
-                    <div class="relative">
-                        <input
-                            type="text"
-                            id="name-input"
-                            placeholder="Start typing to filter..."
-                            onkeyup="filterDropdown()"
-                            required
-                            class="w-full rounded-lg border border-border bg-background-light text-text-normal px-3 py-2 focus:outline-none focus:ring-2 focus:ring-logo placeholder:text-text-muted transition"
-                        >
-                        <select id="name" name="name" class="hidden" required onchange="updateFields()">
-                            <option value="">Select an ingredient</option>
-                            {% for name in possible_names %}
-                                <option value="{{ name }}">{{ name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div
-                            id="name-dropdown"
-                            class="absolute left-0 right-0 mt-1 hidden border border-border bg-background-light text-text-normal rounded-lg shadow-xl max-h-48 overflow-y-auto z-20"
-                            role="listbox"
-                        ></div>
-                    </div>
+    <div id="add-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="modal-box relative w-full max-w-2xl transform scale-95 opacity-0 transition-all duration-200 rounded-3xl border border-border bg-background-dark text-base text-text-normal shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between border-b border-border bg-background-mid px-6 py-4">
+                <h2 class="text-xl font-semibold text-text-normal">Add to Bar</h2>
+                <button onclick="closeAddModal()" class="text-2xl leading-none text-text-muted hover:text-logo transition-colors" aria-label="Close">
+                    &times;
+                </button>
+            </div>
+            <form method="post" class="flex flex-col" onsubmit="return submitWithFields(event)">
+                <div class="space-y-4 bg-background-dark px-6 py-5">
+                    <label for="name-input" class="flex flex-col gap-1 text-sm">
+                        <span class="modal-label">Ingredient</span>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="name-input"
+                                placeholder="Start typing to filter..."
+                                onkeyup="filterDropdown()"
+                                required
+                                class="modal-input w-full"
+                            >
+                            <select id="name" name="name" class="hidden" required onchange="updateFields()">
+                                <option value="">Select an ingredient</option>
+                                {% for name in possible_names %}
+                                    <option value="{{ name }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="name-dropdown" class="ingredient-dropdown hidden" role="listbox"></div>
+                        </div>
+                        <span class="text-xs text-text-muted">Can't find it? Use "Add New Ingredient" below.</span>
+                    </label>
+
+                    <input type="hidden" id="category" name="category" required>
+                    <input type="hidden" id="sub_category" name="sub_category">
                 </div>
 
-                <input type="hidden" id="category" name="category" required>
-                <input type="hidden" id="sub_category" name="sub_category">
-
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <button type="button" id="new-ingredient-trigger" class="hidden items-center gap-2 rounded-full border border-border px-4 py-2 text-text-normal hover:bg-background-light transition" title="Add new ingredient to master list" onclick="openNewIngredientModal()">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background-mid px-6 py-4">
+                    <button type="button" id="new-ingredient-trigger" class="hidden items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-text-normal hover:bg-background-light transition" title="Add new ingredient to master list" onclick="openNewIngredientModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                         Add New Ingredient
                     </button>
 
-                    <div class="flex items-center gap-3">
-                        <button type="button" onclick="clearIngredientFields()" class="flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-text-normal hover:bg-background-light transition" title="Clear current selection">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
-                                <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                            </svg>
+                    <div class="ml-auto flex items-center gap-3">
+                        <button type="button" onclick="clearIngredientFields()" class="modal-button-secondary" title="Clear current selection">
                             Clear
                         </button>
-
-                        <button type="submit" class="flex items-center gap-2 rounded-full bg-logo px-4 py-2 text-light-text-normal hover:ring-2 hover:ring-logo transition" title="Add Bar Item">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                        <button type="submit" class="modal-button-primary inline-flex items-center gap-2" title="Add Bar Item">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
                             Add
@@ -249,3 +249,4 @@
     {{ super() }}
     <script src="{{ url_for('static', filename='js/bar.js') }}" defer></script>
 {% endblock %}
+
