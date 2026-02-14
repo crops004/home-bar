@@ -502,7 +502,8 @@
       input.value = "";
     }
     if (clearButton) {
-      clearButton.classList.add("hidden");
+      clearButton.classList.add("invisible", "opacity-0", "pointer-events-none");
+      clearButton.setAttribute("aria-hidden", "true");
     }
     updateRowVisibility();
     toggleNewIngredientButton(false);
@@ -694,7 +695,10 @@
     const clearButton = getElement("clear-filter-btn");
     const searchValue = getSearchValue();
     if (clearButton) {
-      clearButton.classList.toggle("hidden", !searchValue);
+      clearButton.classList.toggle("invisible", !searchValue);
+      clearButton.classList.toggle("opacity-0", !searchValue);
+      clearButton.classList.toggle("pointer-events-none", !searchValue);
+      clearButton.setAttribute("aria-hidden", String(!searchValue));
     }
     updateRowVisibility();
   }
@@ -748,6 +752,30 @@
       button.addEventListener("click", () => {
         filterTable(button.dataset.filter);
       });
+    });
+  }
+
+  function initTopFiltersToggle() {
+    const toggle = getElement("bar-filters-toggle");
+    const panel = getElement("bar-filters-panel");
+    const plusIcon = getElement("bar-filters-plus");
+    const minusIcon = getElement("bar-filters-minus");
+    if (!toggle || !panel || !plusIcon || !minusIcon) {
+      return;
+    }
+
+    const setState = (expanded) => {
+      panel.classList.toggle("hidden", !expanded);
+      plusIcon.classList.toggle("hidden", expanded);
+      minusIcon.classList.toggle("hidden", !expanded);
+      toggle.setAttribute("aria-expanded", String(expanded));
+    };
+
+    setState(false);
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") !== "true";
+      setState(expanded);
     });
   }
 
@@ -840,6 +868,7 @@
     highlightFilterButton(activeFilter);
     initDeleteModal();
     initFilterButtons();
+    initTopFiltersToggle();
     initAccordion();
     filterAllTables();
   });

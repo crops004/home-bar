@@ -61,9 +61,32 @@
     window.addEventListener("resize", updateViewportSize);
   }
 
+  function initDesktopNavOffset() {
+    const nav = document.getElementById("desktop-nav");
+    if (!nav) {
+      return;
+    }
+
+    const updateOffset = () => {
+      const height = Math.ceil(nav.getBoundingClientRect().height);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--desktop-nav-offset", `${height}px`);
+      }
+    };
+
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(updateOffset);
+      observer.observe(nav);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     initFlashToast();
     initViewportDebugger();
+    initDesktopNavOffset();
   });
 
   window.showToast = showToast;

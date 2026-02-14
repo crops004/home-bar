@@ -3,6 +3,7 @@
 @layer base {
   html {
     scrollbar-gutter: stable;
+    --desktop-nav-offset: 6rem;
   }
 
   @supports not (scrollbar-gutter: stable) {

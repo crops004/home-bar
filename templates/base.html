@@ -15,33 +15,53 @@
         <div class="grid grid-cols-5 items-stretch py-0 text-xs text-text-muted">
             <a href="{{ url_for('bar.bar') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint.startswith('bar.') %}text-logo{% else %}text-text-muted{% endif %}">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full">
-                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M12 11v11"/><path d="m19 3-7 8-7-8Z"/></svg>
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <rect width="24" height="24" fill="none"/>
+                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="1.1" d="M11.5 23.5h-7v-14l3-3v-6h3v6l2 2m7 7l-3 3.5l-3-3.5v-5h6zm-3 3.5v4.5m-2 0h4m-11-20h3"/>
+                    </svg>
                 </span>
                 <span class="leading-none">Bar</span>
             </a>
             <a href="{{ url_for('recipes.recipes') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint.startswith('recipes.') %}text-logo{% else %}text-text-muted{% endif %}">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full">
-                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <rect width="24" height="24" fill="none"/>
+                        <path fill="currentColor" d="M7 3h9a3 3 0 0 1 3 3v13a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3m0 1a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3v6.7l-3-2.1l-3 2.1zm5 0H8v4.78l2-1.4l2 1.4z"/>
+                    </svg>
                 </span>
                 <span class="leading-none">Recipes</span>
             </a>
             <a href="{{ url_for('prices') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'prices' %}text-logo{% else %}text-text-muted{% endif %}">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 block mx-auto">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <rect width="24" height="24" fill="none"/>
+                        <g fill="none" stroke="currentColor" stroke-width="1.1">
+                            <path d="M4.728 16.137c-1.545-1.546-2.318-2.318-2.605-3.321c-.288-1.003-.042-2.068.45-4.197l.283-1.228c.413-1.792.62-2.688 1.233-3.302s1.51-.82 3.302-1.233l1.228-.284c2.13-.491 3.194-.737 4.197-.45c1.003.288 1.775 1.061 3.32 2.606l1.83 1.83C20.657 9.248 22 10.592 22 12.262c0 1.671-1.344 3.015-4.033 5.704c-2.69 2.69-4.034 4.034-5.705 4.034c-1.67 0-3.015-1.344-5.704-4.033z"/>
+                            <path stroke-linecap="round" d="M15.39 15.39c.585-.587.664-1.457.176-1.946s-1.359-.409-1.945.177c-.585.586-1.456.665-1.944.177s-.409-1.359.177-1.944m3.535 3.535l.354.354m-.354-.354c-.4.401-.935.565-1.389.471m-2.5-4.36l.354.354m0 0c.331-.332.753-.5 1.146-.497"/>
+                            <circle cx="8.607" cy="8.879" r="2" transform="rotate(-45 8.607 8.879)"/>
+                        </g>
                     </svg>
                 </span>
                 <span class="leading-none">Prices</span>
             </a>
             <a href="{{ url_for('manage_lists') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'manage_lists' %}text-logo{% else %}text-text-muted{% endif %}">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full">
-                    <svg class="w-5 h-5 block mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <rect width="24" height="24" fill="none"/>
+                        <path fill="currentColor" d="M5.839 17.904L3 15.066l.689-.689l2.125 2.125l4.25-4.25l.688.714zm0-7.231L3 7.835l.689-.689l2.125 2.125l4.25-4.25l.688.714zm7.18 5.442v-1h8v1zm0-7.23v-1h8v1z"/>
+                    </svg>
                 </span>
                 <span class="leading-none">Lists</span>
             </a>
             <a href="{{ url_for('possible_ingredients') }}" class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-0.5 transition-colors {% if current_endpoint == 'possible_ingredients' %}text-logo{% else %}text-text-muted{% endif %}">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full">
-                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 5h4v-2a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v2z" /><path d="M14 3.5c0 1.626 .507 3.212 1.45 4.537l.05 .07a8.093 8.093 0 0 1 1.5 4.694v6.199a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-6.2c0 -1.682 .524 -3.322 1.5 -4.693l.05 -.07a7.823 7.823 0 0 0 1.45 -4.537" /><path d="M7 14.803a2.4 2.4 0 0 0 1 -.803a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 1 -.805" /></svg>
+                    <svg class="w-5 h-5 block mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <rect width="24" height="24" fill="none"/>
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="0.9">
+                            <path d="M17.536 3.393c3.905 3.906 3.905 10.237 0 14.143c-3.906 3.905-10.237 3.905-14.143 0z"/>
+                            <path d="M5.868 15.06a6.5 6.5 0 0 0 9.193-9.192m-4.597 4.596l4.597 4.597m-4.597-4.597v6.364m0-6.364h6.364"/>
+                        </g>
+                    </svg>
                 </span>
                 <span class="leading-none">Ingredients</span>
             </a>
@@ -49,7 +69,7 @@
     </nav>
 
     <!-- Desktop Nav (hidden on mobile) -->
-    <div class="hidden bg-background-dark sm:flex justify-between items-start gap-4 px-4 sticky top-0 z-50 pb-6 pt-4">
+    <div id="desktop-nav" class="hidden bg-background-dark sm:flex justify-between items-start gap-4 px-4 sticky top-0 z-50 pb-6 pt-4">
         <!-- Left nav card -->
         <nav class="bg-gradient-to-t from-background-mid to-background-light border border-border rounded-full shadow-2xl px-4 py-1 ml-4">
             <div class="flex flex-wrap items-center gap-2 sm:gap-4 md:gap-6 mx-2 text-sm font-medium text-text-normal">
